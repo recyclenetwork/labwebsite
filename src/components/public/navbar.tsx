@@ -41,19 +41,20 @@ export function Navbar() {
         <div className="max-w-[1720px] mx-auto px-4 sm:px-6 lg:px-10 xl:px-12">
           <div className="flex items-center justify-between gap-4">
             {/* Left: Lab Brand Logo & Academic Identity */}
-            <Link href="/" className="flex items-center gap-3.5 group flex-shrink-0">
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-[#14532D] to-[#10B981] flex items-center justify-center font-bold shadow-md shadow-emerald-500/20 group-hover:scale-105 transition-transform duration-200 shrink-0">
-                <FlaskConical className="w-5 h-5 text-white stroke-[2.2]" />
+            <Link href="/" className="flex items-center gap-2.5 sm:gap-3.5 group flex-shrink-0 min-w-0">
+              <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-tr from-[#14532D] to-[#10B981] flex items-center justify-center font-bold shadow-md shadow-emerald-500/20 group-hover:scale-105 transition-transform duration-200 shrink-0">
+                <FlaskConical className="w-4.5 h-4.5 sm:w-5 sm:h-5 text-white stroke-[2.2]" />
               </div>
-              <div className="flex flex-col">
+              <div className="flex flex-col min-w-0">
                 <div className="flex items-center gap-1.5">
                   <span
-                    className={`font-extrabold text-[13.5px] sm:text-[14.5px] leading-tight tracking-tight transition-colors ${isSolidNav
+                    className={`font-extrabold text-[12.5px] sm:text-[14.5px] leading-tight tracking-tight transition-colors truncate ${isSolidNav
                         ? "text-slate-900 dark:text-white"
                         : "text-white drop-shadow-[0_2px_4px_rgba(0,0,0,0.85)]"
                       }`}
                   >
-                    Laboratory of Environmental Health and Ecotoxicology
+                    <span className="inline sm:hidden">LabEHE • Ecotoxicology Lab</span>
+                    <span className="hidden sm:inline">Laboratory of Environmental Health and Ecotoxicology</span>
                   </span>
                   <span
                     className={`px-1.5 py-0.5 rounded text-[10px] font-black tracking-wider hidden md:inline-block border transition-colors ${isSolidNav
@@ -65,12 +66,13 @@ export function Navbar() {
                   </span>
                 </div>
                 <span
-                  className={`text-[10px] sm:text-[10.5px] font-semibold mt-0.5 transition-colors ${isSolidNav
+                  className={`text-[9.5px] sm:text-[10.5px] font-semibold mt-0.5 transition-colors truncate ${isSolidNav
                       ? "text-emerald-700 dark:text-emerald-300"
                       : "text-emerald-300 drop-shadow-[0_1px_2px_rgba(0,0,0,0.85)]"
                     }`}
                 >
-                  Department of Environmental Sciences • Jahangirnagar University
+                  <span className="inline sm:hidden">Dept. of Env. Sciences • JU</span>
+                  <span className="hidden sm:inline">Department of Environmental Sciences • Jahangirnagar University</span>
                 </span>
               </div>
             </Link>

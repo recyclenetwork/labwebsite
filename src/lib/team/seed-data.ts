@@ -73,7 +73,7 @@ export const INITIAL_TEAM_MEMBERS: TeamMember[] = [
     orcid: "0000-0002-8419-7201",
     researchGateUrl: "https://www.researchgate.net/profile/Mostafizur-Rahman",
     linkedinUrl: "https://linkedin.com/in/mostafizur-rahman-ecotox",
-    imageSrc: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=800&q=80",
+    imageSrc: "",
     imageAlt: "Prof. Dr. Md. Mostafizur Rahman - Professor & Principal Investigator",
     publicationsCount: 74,
     citationsCount: 2840,

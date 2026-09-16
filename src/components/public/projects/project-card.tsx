@@ -18,8 +18,11 @@ interface ProjectCardProps {
 
 export function ProjectCard({ project, index }: ProjectCardProps) {
   const formattedIndex = String(index + 1).padStart(2, "0");
-  const fallbackImage = "https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?auto=format&fit=crop&w=1200&q=80";
-  const imageSrc = project.hero_image || project.featured_image || fallbackImage;
+  const fallbackImage = "/images/slide-1-field.jpg";
+  let imageSrc = project.hero_image || project.featured_image || fallbackImage;
+  if (imageSrc.includes("photo-1582719478250-c89cae4dc85b")) {
+    imageSrc = "/images/slide-1-field.jpg";
+  }
 
   const isOngoing = project.status === "ongoing";
   const isCompleted = project.status === "completed";

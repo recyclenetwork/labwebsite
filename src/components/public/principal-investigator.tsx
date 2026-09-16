@@ -14,14 +14,22 @@ import {
   Sparkles,
 } from "lucide-react";
 import { useLandingData } from "@/lib/landing-store";
-import { getTeamMembers } from "@/lib/team/store";
+import { getTeamMembers, getCachedPI } from "@/lib/team/store";
+import { INITIAL_TEAM_MEMBERS } from "@/lib/team/seed-data";
 import { TeamMember } from "@/lib/team/types";
 
 export function PrincipalInvestigator() {
+  const [mounted, setMounted] = React.useState(false);
   const landingData = useLandingData();
   const [teamPI, setTeamPI] = React.useState<TeamMember | null>(null);
 
   React.useEffect(() => {
+    setMounted(true);
+    const cached = getCachedPI();
+    if (cached) {
+      setTeamPI(cached);
+    }
+
     async function loadPI() {
       try {
         const members = await getTeamMembers();
@@ -34,14 +42,42 @@ export function PrincipalInvestigator() {
       }
     }
     loadPI();
+
+    const handleUpdate = () => {
+      loadPI();
+    };
+
+    window.addEventListener("team-members-updated", handleUpdate);
+    window.addEventListener("landing-content-updated", handleUpdate);
+    window.addEventListener("storage", handleUpdate);
+
+    return () => {
+      window.removeEventListener("team-members-updated", handleUpdate);
+      window.removeEventListener("landing-content-updated", handleUpdate);
+      window.removeEventListener("storage", handleUpdate);
+    };
   }, []);
+
+  // Filter out any obsolete legacy mock images
+  const cleanImage = (img?: string | null) => {
+    if (!img) return null;
+    if (img === "/images/hero-scientist.jpg") return null;
+    if (img.includes("photo-1534528741775-53994a69daeb")) return null;
+    return img;
+  };
 
   // Use team database PI data, falling back to landing store customizations
   const piName = teamPI?.name || landingData.piSection?.name || "Dr. Mohammad S. Kabir";
   const piRole = teamPI?.role || landingData.piSection?.designation || "Professor & Principal Investigator";
   const piDepartment = teamPI?.department || landingData.piSection?.department || "Department of Environmental Sciences";
   const piAffiliation = teamPI?.affiliation || landingData.piSection?.institution || "Jahangirnagar University";
-  const piImage = teamPI?.imageSrc || landingData.piSection?.imageSrc || "/images/hero-scientist.jpg";
+  
+  const piImage =
+    cleanImage(teamPI?.imageSrc) ||
+    cleanImage(landingData.piSection?.imageSrc) ||
+    cleanImage(getCachedPI()?.imageSrc) ||
+    "";
+
   const piQuote = teamPI?.quote || teamPI?.bio || landingData.piSection?.bioQuote || "Our mission is to unravel the intricate mechanisms of environmental contaminants and translate rigorous experimental toxicology into actionable ecological conservation and community health protection.";
   
   const publicationsText = teamPI?.publicationsCount ? `${teamPI.publicationsCount}+` : landingData.piSection?.publicationsCount || "74+";
@@ -60,6 +96,45 @@ export function PrincipalInvestigator() {
         "Evidence-based National Water & Ecosystem Health Policy",
       ];
 
+  if (!mounted) {
+    return (
+      <section className="py-20 lg:py-28 bg-white dark:bg-[#090D16] border-t border-slate-200/90 dark:border-slate-800 transition-colors duration-300 relative overflow-hidden">
+        <div className="absolute top-1/2 left-0 -translate-y-1/2 w-96 h-96 bg-emerald-500/10 dark:bg-emerald-500/5 rounded-full blur-3xl pointer-events-none" />
+
+        <div className="max-w-[1720px] mx-auto px-4 sm:px-6 lg:px-10 xl:px-12 relative z-10 space-y-12">
+          <div className="flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-emerald-50 dark:bg-emerald-950/80 border border-emerald-200/80 dark:border-emerald-800/40 text-xs font-semibold uppercase tracking-wider text-emerald-800 dark:text-[#34D399] w-fit shadow-xs">
+            <Award className="w-3.5 h-3.5 text-[#10B981]" />
+            <span>Principal Investigator &amp; Lab Director</span>
+          </div>
+
+          <div className="rounded-3xl bg-gradient-to-br from-[#F4F8F5] to-white dark:from-[#0F172A] dark:to-[#090D16] border border-slate-200 dark:border-slate-800 p-6 sm:p-10 lg:p-12 shadow-xl shadow-black/10 grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-14 items-center">
+            <div className="lg:col-span-5 flex flex-col items-center">
+              <div className="relative w-full max-w-[420px] aspect-[4/4.6] rounded-3xl overflow-hidden shadow-2xl border-4 border-white dark:border-slate-700 ring-1 ring-emerald-500/20 bg-slate-900/60 animate-pulse flex flex-col items-center justify-center p-6 text-center">
+                <div className="w-24 h-24 rounded-full bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center mb-3">
+                  <GraduationCap className="w-12 h-12 text-emerald-400" />
+                </div>
+                <span className="text-base font-bold text-white tracking-wide">Principal Investigator</span>
+                <span className="text-xs text-emerald-400 font-medium mt-1">Laboratory Leadership</span>
+              </div>
+            </div>
+
+            <div className="lg:col-span-7 space-y-6 text-left">
+              <div className="space-y-2">
+                <div className="h-4 bg-emerald-500/20 rounded-full w-48 animate-pulse" />
+                <div className="h-10 bg-slate-200 dark:bg-slate-800 rounded-2xl w-5/6 animate-pulse" />
+              </div>
+              <div className="h-24 bg-slate-100 dark:bg-slate-800/60 rounded-2xl w-full animate-pulse" />
+              <div className="grid grid-cols-2 gap-3 pt-2">
+                <div className="h-6 bg-slate-200 dark:bg-slate-800 rounded-xl animate-pulse" />
+                <div className="h-6 bg-slate-200 dark:bg-slate-800 rounded-xl animate-pulse" />
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+    );
+  }
+
   return (
     <section className="py-20 lg:py-28 bg-white dark:bg-[#090D16] border-t border-slate-200/90 dark:border-slate-800 transition-colors duration-300 relative overflow-hidden">
       <div className="absolute top-1/2 left-0 -translate-y-1/2 w-96 h-96 bg-emerald-500/10 dark:bg-emerald-500/5 rounded-full blur-3xl pointer-events-none" />
@@ -72,17 +147,28 @@ export function PrincipalInvestigator() {
         </div>
 
         {/* Main PI Showcase Grid */}
-        <div className="rounded-3xl bg-gradient-to-br from-[#F4F8F5] to-white dark:from-[#0F172A] dark:to-[#090D16] border border-slate-200 dark:border-slate-800 p-6 sm:p-10 lg:p-12 shadow-xl shadow-black/10 grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-14 items-center">
+        <div className="rounded-3xl bg-gradient-to-br from-[#F4F8F5] to-white dark:from-[#0F172A] dark:to-[#090D16] border border-slate-200 dark:border-slate-800 p-6 sm:p-10 lg:p-12 shadow-xl shadow-black/10 grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-14 items-center" suppressHydrationWarning>
           
           {/* Left 5 Cols: PI Portrait & Badges */}
           <div className="lg:col-span-5 flex flex-col items-center">
-            <div className="relative w-full max-w-[420px] aspect-[4/4.6] rounded-3xl overflow-hidden shadow-2xl border-4 border-white dark:border-slate-700 ring-1 ring-emerald-500/20 group">
-              <img
-                src={piImage}
-                alt={piName}
-                className="w-full h-full object-cover object-top group-hover:scale-105 transition-transform duration-700 filter brightness-[0.97]"
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/20 to-transparent" />
+            <div className="relative w-full max-w-[420px] aspect-[4/4.6] rounded-3xl overflow-hidden shadow-2xl border-4 border-white dark:border-slate-700 ring-1 ring-emerald-500/20 group bg-slate-900" suppressHydrationWarning>
+              {piImage ? (
+                <img
+                  src={piImage}
+                  alt={piName}
+                  className="w-full h-full object-cover object-top group-hover:scale-105 transition-transform duration-700 filter brightness-[0.97]"
+                  suppressHydrationWarning
+                />
+              ) : (
+                <div className="w-full h-full bg-gradient-to-br from-emerald-950/60 via-slate-900 to-slate-950 flex flex-col items-center justify-center p-6 text-center">
+                  <div className="w-24 h-24 rounded-full bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center mb-3">
+                    <GraduationCap className="w-12 h-12 text-emerald-400" />
+                  </div>
+                  <span className="text-base font-bold text-white tracking-wide">{piName}</span>
+                  <span className="text-xs text-emerald-400 font-medium mt-1">{piRole}</span>
+                </div>
+              )}
+              <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/20 to-transparent pointer-events-none" />
 
               {/* Floating Top Credential Badge */}
               <div className="absolute top-4 left-4 z-10">
@@ -93,14 +179,14 @@ export function PrincipalInvestigator() {
               </div>
 
               {/* Bottom Image Caption */}
-              <div className="absolute bottom-4 left-4 right-4 text-white z-10 space-y-1">
-                <h3 className="text-xl sm:text-2xl font-bold tracking-tight font-[family-name:var(--font-manrope)]">
+              <div className="absolute bottom-4 left-4 right-4 text-white z-10 space-y-1" suppressHydrationWarning>
+                <h3 className="text-xl sm:text-2xl font-bold tracking-tight font-[family-name:var(--font-manrope)]" suppressHydrationWarning>
                   {piName}
                 </h3>
-                <p className="text-xs sm:text-sm text-emerald-300 font-medium">
+                <p className="text-xs sm:text-sm text-emerald-300 font-medium" suppressHydrationWarning>
                   {piRole}
                 </p>
-                <p className="text-[11px] text-slate-300">
+                <p className="text-[11px] text-slate-300" suppressHydrationWarning>
                   {piDepartment}, {piAffiliation}
                 </p>
               </div>

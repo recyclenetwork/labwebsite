@@ -1691,7 +1691,7 @@ export default function AdminLandingManagerPage() {
                   <div className="flex flex-col sm:flex-row gap-2.5 items-stretch sm:items-center">
                     <input
                       type="text"
-                      value={formData.piSection.imageSrc || "/images/hero-scientist.jpg"}
+                      value={formData.piSection.imageSrc || ""}
                       onChange={(e) =>
                         setFormData({
                           ...formData,

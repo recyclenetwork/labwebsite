@@ -11,10 +11,12 @@ import {
   Sparkles,
   FolderGit2,
   Calendar,
-  Layers
+  Layers,
+  Activity
 } from "lucide-react";
 import { useLandingData } from "@/lib/landing-store";
 import { getPublishedProjects, getLocalProjects } from "@/lib/projects/queries";
+import { SEED_PROJECTS } from "@/lib/projects/seed-data";
 import { ProjectWithRelations } from "@/lib/projects/types";
 
 interface DisplayProject {
@@ -39,25 +41,40 @@ export function FeaturedProject() {
   const [projects, setProjects] = React.useState<DisplayProject[]>([]);
   const [loading, setLoading] = React.useState(true);
   const [currentIndex, setCurrentIndex] = React.useState(0);
-  const [selectedFilter, setSelectedFilter] = React.useState<string>("ALL");
   const [touchStart, setTouchStart] = React.useState<number | null>(null);
+  const [windowWidth, setWindowWidth] = React.useState(1200);
+
+  React.useEffect(() => {
+    const handleResize = () => setWindowWidth(window.innerWidth);
+    handleResize();
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
 
   const formatProjects = React.useCallback((items: ProjectWithRelations[]): DisplayProject[] => {
-    const published = items.filter((p) => p.is_published !== false);
+    // Ensure all seed projects are present so no projects are missing
+    const itemIds = new Set((items || []).map((p) => p.id));
+    const itemSlugs = new Set((items || []).map((p) => p.slug));
+    const combined = [
+      ...(items || []),
+      ...SEED_PROJECTS.filter((sp) => !itemIds.has(sp.id) && !itemSlugs.has(sp.slug)),
+    ];
 
-    // Sort: Featured first, then newest
+    const published = combined.filter((p) => p.is_published !== false);
+
+    // Sort: Featured first, then display_order, then newest
     const sorted = [...published].sort((a, b) => {
       if (a.is_featured && !b.is_featured) return -1;
       if (!a.is_featured && b.is_featured) return 1;
-      const dateA = new Date(a.start_date || a.created_at).getTime();
-      const dateB = new Date(b.start_date || b.created_at).getTime();
+      const orderA = a.display_order ?? 99;
+      const orderB = b.display_order ?? 99;
+      if (orderA !== orderB) return orderA - orderB;
+      const dateA = new Date(a.start_date || a.created_at || 0).getTime();
+      const dateB = new Date(b.start_date || b.created_at || 0).getTime();
       return dateB - dateA;
     });
 
-    // Limit to max latest 8 projects
-    const top8 = sorted.slice(0, 8);
-
-    return top8.map((p, idx) => {
+    return sorted.map((p, idx) => {
       const primaryArea =
         p.research_areas?.[0]?.title || "Ecotoxicology & Environmental Science";
 
@@ -70,20 +87,22 @@ export function FeaturedProject() {
       const fundingSource =
         p.funding_org || p.funding_info?.split("#")[0] || "National Research Grant";
 
-      // Fallback clean scientific imagery
+      // Valid scientific project image
       let validImage = p.hero_image || p.featured_image;
       if (!validImage || validImage.includes("photo-1582719478250-c89cae4dc85b")) {
-        validImage = "/images/gallery/field-sampling.jpg";
+        validImage = "/images/slide-1-field.jpg";
       }
+
+      const projectIndexFormatted = `#${String(idx + 1).padStart(2, "0")}`;
 
       return {
         id: p.id || `proj-${idx}`,
         projectCode: (p.funding_info && p.funding_info.includes("#"))
-          ? p.funding_info.split("#")[1]?.trim() || `PROJ-${p.year || "2026"}`
-          : `JU-ENV-${p.year?.slice(0, 4) || "2026"}-${idx + 1}`,
+          ? p.funding_info.split("#")[1]?.trim() || projectIndexFormatted
+          : projectIndexFormatted,
         title: p.title,
         slug: p.slug || (p.title ? p.title.toLowerCase().replace(/[^a-z0-9]+/g, "-") : "project"),
-        status: (p.status || "COMPLETED").toUpperCase(),
+        status: (p.status || "ongoing").toUpperCase(),
         description: p.short_description || p.full_description?.slice(0, 160) || "Comprehensive ecotoxicological investigation assessing environmental exposure pathways.",
         imageSrc: validImage,
         imageAlt: p.image_alt || p.title,
@@ -102,9 +121,12 @@ export function FeaturedProject() {
       const local = getLocalProjects();
       if (local && local.length > 0) {
         setProjects(formatProjects(local));
+      } else {
+        setProjects(formatProjects(SEED_PROJECTS));
       }
     } catch (e) {
       console.error("Failed to load local projects:", e);
+      setProjects(formatProjects(SEED_PROJECTS));
     } finally {
       setLoading(false);
     }
@@ -118,7 +140,7 @@ export function FeaturedProject() {
       if (remote && remote.length > 0) {
         setProjects(formatProjects(remote));
       }
-    });
+    }).catch(() => {});
 
     const handleUpdate = () => {
       loadAllProjects();
@@ -133,29 +155,8 @@ export function FeaturedProject() {
     };
   }, [loadAllProjects, formatProjects]);
 
-  // Extract unique filter categories from the loaded projects
-  const filterTabs = React.useMemo(() => {
-    const areasSet = new Set<string>();
-    projects.forEach((p) => {
-      if (p.researchArea) areasSet.add(p.researchArea);
-    });
-
-    const tabs = [{ id: "ALL", label: "All Completed Studies" }];
-    Array.from(areasSet).slice(0, 5).forEach((area) => {
-      tabs.push({ id: area, label: area });
-    });
-    return tabs;
-  }, [projects]);
-
-  const filteredProjects = React.useMemo(() => {
-    if (selectedFilter === "ALL") return projects;
-    return projects.filter((p) =>
-      p.researchArea.toLowerCase().includes(selectedFilter.toLowerCase())
-    );
-  }, [projects, selectedFilter]);
-
-  const itemsPerPage = 4;
-  const maxIndex = Math.max(0, filteredProjects.length - itemsPerPage);
+  const visibleCards = windowWidth < 640 ? 1 : windowWidth < 1024 ? 2 : 4;
+  const maxIndex = Math.max(0, projects.length - visibleCards);
 
   const canGoPrev = currentIndex > 0;
   const canGoNext = currentIndex < maxIndex;
@@ -171,10 +172,6 @@ export function FeaturedProject() {
       setCurrentIndex((prev) => Math.min(maxIndex, prev + 1));
     }
   };
-
-  React.useEffect(() => {
-    setCurrentIndex(0);
-  }, [selectedFilter]);
 
   const handleTouchStart = (e: React.TouchEvent) => {
     setTouchStart(e.touches[0].clientX);
@@ -209,7 +206,7 @@ export function FeaturedProject() {
             </div>
 
             <h2 className="text-2xl sm:text-3xl lg:text-4xl 2xl:text-[42px] font-extrabold text-slate-900 dark:text-white tracking-tight leading-snug font-[family-name:var(--font-manrope)]">
-              {landingData.projectsSection?.title || "Completed Projects & Scientific Breakthroughs"}
+              {landingData.projectsSection?.title || "Research Projects & Scientific Breakthroughs"}
             </h2>
 
             <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-300 leading-relaxed font-normal pt-1 max-w-2xl font-[family-name:var(--font-inter)]">
@@ -219,9 +216,9 @@ export function FeaturedProject() {
           </div>
 
           <div className="flex flex-wrap items-center gap-4">
-            {filteredProjects.length > 0 && (
-              <span className="text-xs font-semibold text-emerald-800 dark:text-[#34D399] bg-emerald-50 dark:bg-emerald-950/60 px-3.5 py-1.5 rounded-xl border border-emerald-200/80 dark:border-emerald-800/30">
-                {currentIndex + 1} – {Math.min(currentIndex + itemsPerPage, filteredProjects.length)} of {filteredProjects.length} Projects
+            {projects.length > 0 && (
+              <span className="text-xs font-semibold text-emerald-800 dark:text-[#34D399] bg-emerald-50 dark:bg-emerald-950/60 px-3.5 py-1.5 rounded-xl border border-emerald-200/80 dark:border-emerald-800/30 font-mono">
+                {currentIndex + 1} – {Math.min(currentIndex + visibleCards, projects.length)} of {projects.length} Projects
               </span>
             )}
 
@@ -267,136 +264,134 @@ export function FeaturedProject() {
           </div>
         </div>
 
-        {/* Filter Tabs */}
-        {filterTabs.length > 1 && (
-          <div className="flex flex-wrap items-center gap-2 pt-1">
-            {filterTabs.map((tab) => (
-              <button
-                key={tab.id}
-                type="button"
-                onClick={() => setSelectedFilter(tab.id)}
-                className={`px-3.5 py-1.5 rounded-xl text-xs sm:text-[13px] font-semibold transition-all cursor-pointer ${
-                  selectedFilter === tab.id
-                    ? "bg-[#14532D] text-white shadow-sm border border-transparent"
-                    : "bg-slate-100 dark:bg-[#0F172A] text-slate-700 dark:text-slate-300 border border-slate-200/80 dark:border-slate-800 hover:border-[#10B981] hover:bg-emerald-50 dark:hover:bg-slate-800/80"
-                }`}
-              >
-                {tab.label}
-              </button>
-            ))}
-          </div>
-        )}
-
         {/* Carousel Grid Track */}
         <div
           className="relative overflow-hidden w-full pb-4"
           onTouchStart={handleTouchStart}
           onTouchEnd={handleTouchEnd}
         >
-          {filteredProjects.length > 0 ? (
+          {projects.length > 0 ? (
             <div
               className="flex transition-transform duration-500 ease-out gap-5 sm:gap-6"
               style={{
-                transform: `translateX(-${currentIndex * (100 / itemsPerPage)}%)`,
+                transform: `translateX(-${currentIndex * (100 / visibleCards)}%)`,
               }}
             >
-              {filteredProjects.map((project) => (
-                <div
-                  key={project.id}
-                  className="w-full sm:w-[calc(50%-12px)] lg:w-[calc(25%-18px)] flex-shrink-0 flex flex-col"
-                >
-                  <div className="group h-full rounded-3xl bg-white dark:bg-[#0F172A] border border-slate-200/90 dark:border-slate-800 hover:border-[#10B981] dark:hover:border-[#10B981] shadow-sm hover:shadow-2xl hover:shadow-black/20 transition-all duration-300 flex flex-col justify-between overflow-hidden hover:-translate-y-1.5 text-left">
-                    
-                    <div>
-                      <div className="relative w-full aspect-[16/10] overflow-hidden bg-slate-900">
-                        <img
-                          src={project.imageSrc}
-                          alt={project.imageAlt}
-                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 filter brightness-[0.93]"
-                          onError={(e) => {
-                            (e.target as HTMLImageElement).src = "/images/gallery/field-sampling.jpg";
-                          }}
-                        />
-                        <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-black/30 pointer-events-none" />
+              {projects.map((project) => {
+                const isCompleted = project.status.toLowerCase() === "completed";
+                const isOngoing = project.status.toLowerCase() === "ongoing";
 
-                        <div className="absolute top-2.5 left-2.5 right-2.5 flex items-center justify-between z-10">
-                          <span className="text-xs font-bold text-[#34D399] px-2.5 py-0.5 rounded-full bg-black/65 backdrop-blur-md border border-emerald-500/30 shadow font-mono truncate max-w-[170px]">
-                            {project.projectCode}
-                          </span>
-
-                          <span className="text-[11px] font-semibold text-white px-2.5 py-0.5 rounded-full bg-emerald-950/80 backdrop-blur-md border border-emerald-700/50 flex items-center gap-1.5 shadow">
-                            <CheckCircle2 className="w-3 h-3 text-[#10B981]" />
-                            <span>{project.status}</span>
-                          </span>
-                        </div>
-
-                        <div className="absolute bottom-2 left-2.5 right-2.5 flex items-center justify-between text-white text-xs z-10">
-                          <span className="text-emerald-300 font-semibold truncate max-w-[180px]">
-                            {project.funding}
-                          </span>
-                          <span className="text-white/80 text-[11px] font-medium font-mono">
-                            {project.timeline}
-                          </span>
-                        </div>
-                      </div>
-
-                      <div className="relative -mt-4 z-10 w-full overflow-hidden leading-none pointer-events-none">
-                        <svg
-                          className="w-full h-5 text-white dark:text-[#0F172A] transition-colors"
-                          viewBox="0 0 100 25"
-                          preserveAspectRatio="none"
-                        >
-                          <path
-                            d="M0,8 C25,22 65,-4 100,12 L100,25 L0,25 Z"
-                            fill="currentColor"
+                return (
+                  <div
+                    key={project.id}
+                    className="w-full sm:w-[calc(50%-12px)] lg:w-[calc(25%-18px)] flex-shrink-0 flex flex-col"
+                  >
+                    <div className="group h-full rounded-3xl bg-white dark:bg-[#0F172A] border border-slate-200/90 dark:border-slate-800 hover:border-[#10B981] dark:hover:border-[#10B981] shadow-sm hover:shadow-2xl hover:shadow-black/20 transition-all duration-300 flex flex-col justify-between overflow-hidden hover:-translate-y-1.5 text-left">
+                      
+                      <div>
+                        <div className="relative w-full aspect-[16/10] overflow-hidden bg-slate-900">
+                          <img
+                            src={project.imageSrc}
+                            alt={project.imageAlt}
+                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 filter brightness-[0.93]"
+                            onError={(e) => {
+                              (e.target as HTMLImageElement).src = "/images/gallery/analytical-instrumentation.jpg";
+                            }}
                           />
-                        </svg>
-                      </div>
+                          <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-black/30 pointer-events-none" />
 
-                      <div className="p-5 sm:p-6 pt-1 space-y-3.5 text-left">
-                        <div className="space-y-2">
-                          <span className="text-[11px] font-bold uppercase tracking-wider text-[#059669] dark:text-[#34D399] block font-[family-name:var(--font-inter)] truncate">
-                            {project.researchArea}
-                          </span>
+                          <div className="absolute top-2.5 left-2.5 right-2.5 flex items-center justify-between z-10">
+                            <span className="text-xs font-bold text-[#34D399] px-2.5 py-0.5 rounded-full bg-black/65 backdrop-blur-md border border-emerald-500/30 shadow font-mono truncate max-w-[170px]">
+                              {project.projectCode}
+                            </span>
 
-                          <h3 className="text-base sm:text-[17px] font-bold text-slate-900 dark:text-white tracking-[-0.01em] font-[family-name:var(--font-manrope)] group-hover:text-[#059669] dark:group-hover:text-[#34D399] transition-colors leading-[1.38] line-clamp-2">
-                            {project.title}
-                          </h3>
+                            {isCompleted ? (
+                              <span className="text-[11px] font-semibold text-emerald-200 px-2.5 py-0.5 rounded-full bg-emerald-950/85 backdrop-blur-md border border-emerald-600/50 flex items-center gap-1.5 shadow">
+                                <CheckCircle2 className="w-3 h-3 text-[#10B981]" />
+                                <span>COMPLETED</span>
+                              </span>
+                            ) : isOngoing ? (
+                              <span className="text-[11px] font-semibold text-sky-200 px-2.5 py-0.5 rounded-full bg-sky-950/85 backdrop-blur-md border border-sky-600/50 flex items-center gap-1.5 shadow">
+                                <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse" />
+                                <span>ONGOING</span>
+                              </span>
+                            ) : (
+                              <span className="text-[11px] font-semibold text-slate-200 px-2.5 py-0.5 rounded-full bg-slate-900/85 backdrop-blur-md border border-slate-700/50 flex items-center gap-1.5 shadow">
+                                <span>{project.status}</span>
+                              </span>
+                            )}
+                          </div>
 
-                          <p className="text-sm text-slate-600 dark:text-slate-300 leading-relaxed font-normal line-clamp-3 pt-0.5 font-[family-name:var(--font-inter)]">
-                            {project.description}
-                          </p>
+                          <div className="absolute bottom-2 left-2.5 right-2.5 flex items-center justify-between text-white text-xs z-10">
+                            <span className="text-emerald-300 font-semibold truncate max-w-[180px]">
+                              {project.funding}
+                            </span>
+                            <span className="text-white/80 text-[11px] font-medium font-mono">
+                              {project.timeline}
+                            </span>
+                          </div>
                         </div>
 
-                        <div className="p-2.5 px-3 rounded-xl bg-[#F0FDF4] dark:bg-[#0B1120] border border-emerald-900/10 dark:border-slate-800 flex items-center gap-2">
-                          <Sparkles className="w-3.5 h-3.5 text-[#10B981] flex-shrink-0" />
-                          <span className="text-xs font-semibold text-[#064E3B] dark:text-emerald-300 leading-snug line-clamp-1">
-                            {project.keyOutcome}
-                          </span>
+                        <div className="relative -mt-4 z-10 w-full overflow-hidden leading-none pointer-events-none">
+                          <svg
+                            className="w-full h-5 text-white dark:text-[#0F172A] transition-colors"
+                            viewBox="0 0 100 25"
+                            preserveAspectRatio="none"
+                          >
+                            <path
+                              d="M0,8 C25,22 65,-4 100,12 L100,25 Z"
+                              fill="currentColor"
+                            />
+                          </svg>
+                        </div>
+
+                        <div className="p-5 sm:p-6 pt-1 space-y-3.5 text-left">
+                          <div className="space-y-2">
+                            <span className="text-[11px] font-bold uppercase tracking-wider text-[#059669] dark:text-[#34D399] block font-[family-name:var(--font-inter)] truncate">
+                              {project.researchArea}
+                            </span>
+
+                            <h3 className="text-base sm:text-[17px] font-bold text-slate-900 dark:text-white tracking-[-0.01em] font-[family-name:var(--font-manrope)] group-hover:text-[#059669] dark:group-hover:text-[#34D399] transition-colors leading-[1.38] line-clamp-2">
+                              <Link href={`/projects/${project.slug}`}>
+                                {project.title}
+                              </Link>
+                            </h3>
+
+                            <p className="text-sm text-slate-600 dark:text-slate-300 leading-relaxed font-normal line-clamp-3 pt-0.5 font-[family-name:var(--font-inter)]">
+                              {project.description}
+                            </p>
+                          </div>
+
+                          <div className="p-2.5 px-3 rounded-xl bg-[#F0FDF4] dark:bg-[#0B1120] border border-emerald-900/10 dark:border-slate-800 flex items-center gap-2">
+                            <Sparkles className="w-3.5 h-3.5 text-[#10B981] flex-shrink-0" />
+                            <span className="text-xs font-semibold text-[#064E3B] dark:text-emerald-300 leading-snug line-clamp-1">
+                              {project.keyOutcome}
+                            </span>
+                          </div>
                         </div>
                       </div>
+
+                      <div className="p-5 sm:p-6 pt-0">
+                        <div className="pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between gap-2">
+                          <div className="flex items-center gap-1.5 text-xs text-slate-600 dark:text-slate-400 truncate font-[family-name:var(--font-inter)]">
+                            <User className="w-3.5 h-3.5 text-[#059669] dark:text-[#34D399] flex-shrink-0" />
+                            <span className="truncate">{project.leadResearcher}</span>
+                          </div>
+
+                          <Link
+                            href={`/projects/${project.slug}`}
+                            className="inline-flex items-center gap-1 text-xs font-bold text-[#14532D] dark:text-[#10B981] group-hover:translate-x-1 transition-transform flex-shrink-0"
+                          >
+                            <span>View Project</span>
+                            <ArrowRight className="w-3 h-3 stroke-[2.5]" />
+                          </Link>
+                        </div>
+                      </div>
+
                     </div>
-
-                    <div className="p-5 sm:p-6 pt-0">
-                      <div className="pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between gap-2">
-                        <div className="flex items-center gap-1.5 text-xs text-slate-600 dark:text-slate-400 truncate font-[family-name:var(--font-inter)]">
-                          <User className="w-3.5 h-3.5 text-[#059669] dark:text-[#34D399] flex-shrink-0" />
-                          <span className="truncate">{project.leadResearcher}</span>
-                        </div>
-
-                        <Link
-                          href={`/projects#${project.slug}`}
-                          className="inline-flex items-center gap-1 text-xs font-bold text-[#14532D] dark:text-[#10B981] group-hover:translate-x-1 transition-transform flex-shrink-0"
-                        >
-                          <span>Findings</span>
-                          <ArrowRight className="w-3 h-3 stroke-[2.5]" />
-                        </Link>
-                      </div>
-                    </div>
-
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           ) : (
             <div className="p-12 text-center rounded-3xl bg-white dark:bg-[#0F172A] border border-slate-200 dark:border-slate-800 space-y-3">

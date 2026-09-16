@@ -14,15 +14,6 @@ import { ResearchGallery } from "@/components/public/research-gallery";
 import { ContactPreview } from "@/components/public/contact-preview";
 import { Footer } from "@/components/public/footer";
 
-import {
-  MOCK_HERO_DATA,
-  MOCK_METRICS,
-  MOCK_RESEARCH_AREAS,
-  MOCK_PROJECTS,
-  MOCK_PUBLICATIONS,
-  MOCK_PEOPLE,
-} from "@/data/mock-homepage";
-
 export default function HomePage() {
   return (
     <div className="min-h-screen bg-[var(--bg-page)] text-[var(--text-main)] transition-colors duration-300 flex flex-col justify-between">
@@ -31,13 +22,13 @@ export default function HomePage() {
 
       <main className="flex-grow">
         {/* 2. Hero Section with Signature Scientific Network */}
-        <Hero data={MOCK_HERO_DATA} />
+        <Hero />
 
         {/* 3. Research Metrics Strip */}
-        <ResearchStats metrics={MOCK_METRICS} />
+        <ResearchStats />
 
         {/* 4. Research Focus ("What We Study") */}
-        <ResearchAreas areas={MOCK_RESEARCH_AREAS} />
+        <ResearchAreas />
 
         {/* 5. Completed & Flagship Projects Showcase */}
         <FeaturedProject />
@@ -52,7 +43,7 @@ export default function HomePage() {
         <PrincipalInvestigator />
 
         {/* 8. People Section ("The People Behind The Science") */}
-        <FeaturedPeople people={MOCK_PEOPLE} />
+        <FeaturedPeople />
 
         {/* 9. Latest News & Breakthroughs (Synced with News Store) */}
         <LatestNews />

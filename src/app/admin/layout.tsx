@@ -18,6 +18,7 @@ import {
   Settings,
   LogOut,
   ExternalLink,
+  ArrowUpRight,
   Search,
   Sun,
   Moon,
@@ -42,37 +43,103 @@ function AdminLayoutContent({ children }: AdminLayoutProps) {
   const router = useRouter();
   const { theme, toggleTheme } = useAdminTheme();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [userEmail, setUserEmail] = useState<string>("admin@juniv.edu");
-  const [userName, setUserName] = useState<string>("Md. Shahed");
+  const [userEmail, setUserEmail] = useState<string>("");
+  const [userName, setUserName] = useState<string>("");
   const [isCollapsed, setIsCollapsed] = useState(false);
+  const [isCheckingAuth, setIsCheckingAuth] = useState(true);
+  const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
 
   useEffect(() => {
+    let mounted = true;
     async function checkAuth() {
+      if (pathname === "/admin/login") {
+        setIsCheckingAuth(false);
+        return;
+      }
       try {
         const supabase = createClient();
-        const { data: { user } } = await supabase.auth.getUser();
-        if (user?.email) {
-          setUserEmail(user.email);
-          if (user.user_metadata?.full_name) {
-            setUserName(user.user_metadata.full_name);
-          }
+        const { data: { user }, error } = await supabase.auth.getUser();
+        if (!mounted) return;
+
+        if (error || !user) {
+          window.location.href = `/auth/login?redirectTo=${encodeURIComponent(pathname)}`;
+          return;
         }
+
+        setUserEmail(user.email || "sasajeeb1@gmail.com");
+        setUserName(user.user_metadata?.full_name || user.email?.split("@")[0] || "Lab Administrator");
+        setIsCheckingAuth(false);
       } catch (e) {
         console.error("Auth check error:", e);
+        if (mounted) {
+          window.location.href = `/auth/login?redirectTo=${encodeURIComponent(pathname)}`;
+        }
       }
     }
-    checkAuth();
-  }, []);
 
-  const handleSignOut = async () => {
+    checkAuth();
+
     try {
       const supabase = createClient();
-      await supabase.auth.signOut();
-      router.push("/auth/login");
-      router.refresh();
-    } catch (e) {
-      console.error("Sign out error:", e);
+      const { data: authListener } = supabase.auth.onAuthStateChange((event, session) => {
+        if (!mounted) return;
+        if (event === "SIGNED_OUT" || !session?.user) {
+          if (pathname !== "/admin/login") {
+            window.location.href = `/auth/login?redirectTo=${encodeURIComponent(pathname)}`;
+          }
+        } else if (session?.user) {
+          setUserEmail(session.user.email || "sasajeeb1@gmail.com");
+          setUserName(session.user.user_metadata?.full_name || session.user.email?.split("@")[0] || "Lab Administrator");
+          setIsCheckingAuth(false);
+        }
+      });
+
+      return () => {
+        mounted = false;
+        authListener?.subscription.unsubscribe();
+      };
+    } catch {
+      return () => {
+        mounted = false;
+      };
     }
+  }, [pathname, router]);
+
+  const handleSignOut = async (e?: React.MouseEvent) => {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+
+    try {
+      if (typeof window !== "undefined") {
+        const keysToRemove: string[] = [];
+        for (let i = 0; i < localStorage.length; i++) {
+          const key = localStorage.key(i);
+          if (key && (key.startsWith("sb-") || key.includes("auth-token") || key.includes("supabase"))) {
+            keysToRemove.push(key);
+          }
+        }
+        keysToRemove.forEach((k) => localStorage.removeItem(k));
+        for (let i = 0; i < sessionStorage.length; i++) {
+          const key = sessionStorage.key(i);
+          if (key && (key.startsWith("sb-") || key.includes("auth-token") || key.includes("supabase"))) {
+            sessionStorage.removeItem(key);
+          }
+        }
+      }
+    } catch (err) {
+      console.error("Storage clear error:", err);
+    }
+
+    try {
+      const supabase = createClient();
+      supabase.auth.signOut({ scope: "global" }).catch(() => {});
+    } catch (err) {
+      console.error("Sign out client error:", err);
+    }
+
+    window.location.href = "/api/auth/signout";
   };
 
   interface NavItem {
@@ -128,6 +195,22 @@ function AdminLayoutContent({ children }: AdminLayoutProps) {
   ];
 
   const isLight = theme === "light";
+
+  if (isCheckingAuth) {
+    return (
+      <div className={`min-h-screen flex flex-col items-center justify-center ${isLight ? "bg-[#F4F6F8] text-slate-800" : "bg-[#090D16] text-slate-100"}`}>
+        <div className="flex flex-col items-center gap-4">
+          <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-[#14532D] to-[#10B981] flex items-center justify-center shadow-lg shadow-emerald-500/20 animate-pulse">
+            <FlaskConical className="w-6 h-6 text-white" />
+          </div>
+          <div className="flex items-center gap-2 text-xs font-mono tracking-wider uppercase text-emerald-500">
+            <Sparkles className="w-3.5 h-3.5 animate-spin" />
+            <span>Verifying Admin Authorization...</span>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className={`min-h-screen flex ${isLight ? "bg-[#F4F6F8] text-slate-800" : "bg-[#090D16] text-slate-100"} font-sans antialiased`}>
@@ -215,35 +298,53 @@ function AdminLayoutContent({ children }: AdminLayoutProps) {
         </div>
 
         {/* User Profile Footer */}
-        <div className={`p-4 border-t ${isLight ? "border-slate-100 bg-slate-50/50" : "border-slate-800/80 bg-[#090D16]/50"}`}>
-          <div className="flex items-center justify-between gap-3">
-            <div className="flex items-center gap-2.5 min-w-0">
-              <div className="relative shrink-0">
-                <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-emerald-600 to-teal-500 text-white flex items-center justify-center font-bold text-xs shadow-sm">
+        <div className={`p-4 border-t ${isLight ? "border-slate-100 bg-slate-50/50" : "border-slate-800/80 bg-[#090D16]/50"} relative z-20`}>
+          <div className={`flex items-center ${isCollapsed ? "justify-center" : "justify-between gap-3"}`}>
+            {isCollapsed ? (
+              <a
+                href="/api/auth/signout"
+                onClick={(e) => handleSignOut(e)}
+                title="Sign out of Admin"
+                className="relative group p-1 rounded-xl hover:bg-rose-500/10 transition cursor-pointer"
+              >
+                <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-emerald-600 to-teal-500 text-white flex items-center justify-center font-bold text-xs shadow-sm group-hover:hidden">
                   {userName.charAt(0)}
                 </div>
-                <span className="absolute bottom-0 right-0 w-2 h-2 rounded-full bg-emerald-400 ring-2 ring-white dark:ring-slate-900" />
-              </div>
-              {!isCollapsed && (
-                <div className="flex flex-col min-w-0">
-                  <span className={`text-xs font-bold leading-tight truncate ${isLight ? "text-slate-800" : "text-white"}`}>
-                    {userName}
-                  </span>
-                  <span className={`text-[10px] ${isLight ? "text-slate-400" : "text-slate-400"}`}>
-                    Administrator • <span className="text-emerald-500 font-medium">Online</span>
-                  </span>
+                <div className="w-8 h-8 rounded-full bg-rose-600 text-white hidden group-hover:flex items-center justify-center font-bold text-xs shadow-sm">
+                  <LogOut className="w-3.5 h-3.5" />
                 </div>
-              )}
-            </div>
+                <span className="absolute bottom-0 right-0 w-2 h-2 rounded-full bg-emerald-400 ring-2 ring-white dark:ring-slate-900 group-hover:hidden" />
+              </a>
+            ) : (
+              <>
+                <div className="flex items-center gap-2.5 min-w-0">
+                  <div className="relative shrink-0">
+                    <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-emerald-600 to-teal-500 text-white flex items-center justify-center font-bold text-xs shadow-sm">
+                      {userName.charAt(0)}
+                    </div>
+                    <span className="absolute bottom-0 right-0 w-2 h-2 rounded-full bg-emerald-400 ring-2 ring-white dark:ring-slate-900" />
+                  </div>
+                  <div className="flex flex-col min-w-0">
+                    <span className={`text-xs font-bold leading-tight truncate ${isLight ? "text-slate-800" : "text-white"}`}>
+                      {userName}
+                    </span>
+                    <span className={`text-[10px] ${isLight ? "text-slate-400" : "text-slate-400"}`}>
+                      Administrator • <span className="text-emerald-500 font-medium">Online</span>
+                    </span>
+                  </div>
+                </div>
 
-            {!isCollapsed && (
-              <button
-                onClick={handleSignOut}
-                title="Sign out"
-                className={`p-1.5 rounded-lg border text-slate-400 hover:text-rose-500 ${isLight ? "border-slate-200 hover:bg-rose-50" : "border-slate-800 hover:bg-rose-950/30"} transition-colors`}
-              >
-                <LogOut className="w-3.5 h-3.5" />
-              </button>
+                <a
+                  href="/api/auth/signout"
+                  onClick={(e) => handleSignOut(e)}
+                  title="Sign out"
+                  className={`p-2 rounded-xl border text-rose-400 hover:text-rose-200 hover:bg-rose-500/20 ${
+                    isLight ? "border-rose-200 bg-rose-50/80" : "border-rose-500/30 bg-rose-950/40"
+                  } transition-all cursor-pointer shrink-0 flex items-center justify-center`}
+                >
+                  <LogOut className="w-4 h-4 text-rose-500" />
+                </a>
+              </>
             )}
           </div>
         </div>
@@ -304,20 +405,96 @@ function AdminLayoutContent({ children }: AdminLayoutProps) {
               </span>
             </button>
 
-            {/* Profile Avatar Pill */}
-            <div className="flex items-center gap-2.5 pl-2 border-l border-slate-200 dark:border-slate-800">
-              <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-emerald-600 to-teal-500 text-white flex items-center justify-center font-bold text-xs shadow-sm">
-                {userName.charAt(0)}
-              </div>
-              <div className="hidden sm:flex flex-col text-left">
-                <span className={`text-xs font-bold leading-tight ${isLight ? "text-slate-800" : "text-white"}`}>
-                  {userName}
-                </span>
-                <span className={`text-[10px] ${isLight ? "text-slate-400" : "text-slate-400"}`}>
-                  Administrator
-                </span>
-              </div>
-              <ChevronDown className="w-3.5 h-3.5 text-slate-400 hidden sm:block" />
+            {/* Profile Avatar Pill & Dropdown */}
+            <div className="relative">
+              <button
+                onClick={() => setProfileDropdownOpen((prev) => !prev)}
+                className={`flex items-center gap-2.5 pl-2 py-1 pr-1.5 rounded-xl border border-transparent hover:border-slate-200 dark:hover:border-slate-800 transition cursor-pointer ${
+                  profileDropdownOpen ? (isLight ? "bg-slate-100" : "bg-slate-800") : ""
+                }`}
+              >
+                <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-emerald-600 to-teal-500 text-white flex items-center justify-center font-bold text-xs shadow-sm">
+                  {userName.charAt(0)}
+                </div>
+                <div className="hidden sm:flex flex-col text-left">
+                  <span className={`text-xs font-bold leading-tight ${isLight ? "text-slate-800" : "text-white"}`}>
+                    {userName}
+                  </span>
+                  <span className={`text-[10px] ${isLight ? "text-slate-400" : "text-slate-400"}`}>
+                    Administrator
+                  </span>
+                </div>
+                <ChevronDown className={`w-3.5 h-3.5 text-slate-400 hidden sm:block transition-transform ${profileDropdownOpen ? "rotate-180" : ""}`} />
+              </button>
+
+              {/* Profile Dropdown Menu */}
+              {profileDropdownOpen && (
+                <>
+                  <div
+                    className="fixed inset-0 z-40"
+                    onClick={() => setProfileDropdownOpen(false)}
+                  />
+                  <div
+                    className={`absolute right-0 mt-2 w-64 rounded-2xl border shadow-xl z-50 p-2 animate-in fade-in slide-in-from-top-2 duration-200 ${
+                      isLight ? "bg-white border-slate-200" : "bg-[#0F172A] border-slate-800"
+                    }`}
+                  >
+                    <div className="p-3 border-b border-slate-100 dark:border-slate-800">
+                      <p className={`text-xs font-bold truncate ${isLight ? "text-slate-900" : "text-white"}`}>
+                        {userName}
+                      </p>
+                      <p className="text-[11px] text-slate-400 truncate mt-0.5">
+                        {userEmail || "admin@ecotox-ju.ac.bd"}
+                      </p>
+                      <span className="inline-block mt-2 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-500/10 text-emerald-500 border border-emerald-500/20">
+                        Active Administrator
+                      </span>
+                    </div>
+
+                    <div className="py-1">
+                      <Link
+                        href="/admin/settings"
+                        onClick={() => setProfileDropdownOpen(false)}
+                        className={`flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-medium transition ${
+                          isLight ? "text-slate-700 hover:bg-slate-100" : "text-slate-300 hover:bg-slate-800"
+                        }`}
+                      >
+                        <Settings className="w-4 h-4 text-slate-400" />
+                        <span>Admin Settings</span>
+                      </Link>
+
+                      <Link
+                        href="/"
+                        target="_blank"
+                        onClick={() => setProfileDropdownOpen(false)}
+                        className={`flex items-center justify-between px-3 py-2 rounded-xl text-xs font-medium transition ${
+                          isLight ? "text-slate-700 hover:bg-slate-100" : "text-slate-300 hover:bg-slate-800"
+                        }`}
+                      >
+                        <div className="flex items-center gap-2.5">
+                          <ExternalLink className="w-4 h-4 text-slate-400" />
+                          <span>View Live Website</span>
+                        </div>
+                        <ArrowUpRight className="w-3.5 h-3.5 text-slate-400" />
+                      </Link>
+                    </div>
+
+                    <div className="pt-1 border-t border-slate-100 dark:border-slate-800">
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          setProfileDropdownOpen(false);
+                          handleSignOut(e);
+                        }}
+                        className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-semibold text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/30 transition cursor-pointer"
+                      >
+                        <LogOut className="w-4 h-4 text-rose-500" />
+                        <span>Sign Out</span>
+                      </button>
+                    </div>
+                  </div>
+                </>
+              )}
             </div>
           </div>
         </header>
@@ -381,7 +558,11 @@ function AdminLayoutContent({ children }: AdminLayoutProps) {
 
               <div className="pt-4 border-t border-slate-200 dark:border-slate-800 flex items-center justify-between">
                 <span className="text-xs font-bold">{userName}</span>
-                <button onClick={handleSignOut} className="text-xs text-rose-500 font-semibold flex items-center gap-1">
+                <button
+                  type="button"
+                  onClick={(e) => handleSignOut(e)}
+                  className="text-xs text-rose-500 font-semibold flex items-center gap-1 cursor-pointer"
+                >
                   <LogOut className="w-3.5 h-3.5" /> Sign out
                 </button>
               </div>

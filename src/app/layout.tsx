@@ -1,6 +1,17 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
+import Script from "next/script";
 import { Inter, Manrope } from "next/font/google";
 import "./globals.css";
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 5,
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#ffffff" },
+    { media: "(prefers-color-scheme: dark)", color: "#04150C" },
+  ],
+};
 
 const inter = Inter({
   variable: "--font-inter",
@@ -44,8 +55,10 @@ export default function RootLayout({
       suppressHydrationWarning
       className={`${inter.variable} ${manrope.variable} font-sans`}
     >
-      <head>
-        <script
+      <body className="font-sans min-h-screen bg-[var(--bg-page)] text-[var(--text-main)] transition-colors duration-300 antialiased selection:bg-[#10B981]/30 selection:text-[#34D399]">
+        <Script
+          id="theme-init"
+          strategy="beforeInteractive"
           dangerouslySetInnerHTML={{
             __html: `
               try {
@@ -60,8 +73,6 @@ export default function RootLayout({
             `,
           }}
         />
-      </head>
-      <body className="font-sans min-h-screen bg-[var(--bg-page)] text-[var(--text-main)] transition-colors duration-300 antialiased selection:bg-[#10B981]/30 selection:text-[#34D399]">
         {children}
       </body>
     </html>

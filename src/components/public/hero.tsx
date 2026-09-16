@@ -256,23 +256,23 @@ export function Hero({ data }: HeroProps) {
       </div>
 
       {/* Main Content Area */}
-      <div className="relative z-10 max-w-[1720px] mx-auto px-4 sm:px-6 lg:px-10 xl:px-12 w-full pt-36 sm:pt-40 lg:pt-44 flex-grow flex items-center">
-        <div className="w-full grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-8 items-center">
+      <div className="relative z-10 max-w-[1720px] mx-auto px-4 sm:px-6 lg:px-10 xl:px-12 w-full pt-28 sm:pt-36 lg:pt-44 flex-grow flex items-center">
+        <div className="w-full grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-8 items-center">
           
           {/* Left Column: Headlines, Tag, and Dual CTAs */}
-          <div className="lg:col-span-7 space-y-6 sm:space-y-8 text-left">
+          <div className="lg:col-span-7 space-y-4 sm:space-y-6 text-left">
             {/* Official Academic Laboratory Credential Badge */}
-            <div className="inline-flex items-center gap-2.5 px-4 py-1.5 rounded-full bg-black/40 border border-[#10B981]/40 backdrop-blur-md text-xs sm:text-[13px] font-mono-scientific font-bold text-emerald-200 tracking-[0.14em] uppercase shadow-lg">
-              <span className="flex h-2 w-2 relative">
+            <div className="inline-flex items-center gap-2 px-3 py-1 sm:px-4 sm:py-1.5 rounded-full bg-black/50 border border-[#10B981]/40 backdrop-blur-md text-[10.5px] sm:text-[13px] font-mono-scientific font-bold text-emerald-300 tracking-[0.12em] uppercase shadow-lg max-w-full">
+              <span className="flex h-2 w-2 relative shrink-0">
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#10B981] opacity-75"></span>
                 <span className="relative inline-flex rounded-full h-2 w-2 bg-[#10B981]"></span>
               </span>
-              <span>{stage.eyebrow}</span>
+              <span className="truncate">{stage.eyebrow}</span>
             </div>
 
             {/* Main Animated Headline with Strong Manrope Weight */}
             <div key={stage.id} className="animate-in fade-in slide-in-from-bottom-3 duration-500">
-              <h1 className="text-4xl sm:text-6xl lg:text-[4.75rem] font-extrabold text-white leading-[1.08] tracking-[-0.03em] font-heading drop-shadow-lg">
+              <h1 className="text-[2rem] xs:text-[2.35rem] sm:text-5xl lg:text-[4.75rem] font-extrabold text-white leading-[1.12] sm:leading-[1.08] tracking-[-0.03em] font-heading drop-shadow-md">
                 {stage.headline} <br />
                 <span className="font-extrabold text-white">{stage.highlightPrefix}</span>
                 <span className="font-extrabold text-[#34D399] drop-shadow-[0_0_35px_rgba(52,211,153,0.5)]">
@@ -281,37 +281,36 @@ export function Hero({ data }: HeroProps) {
               </h1>
 
               {/* Subheadline */}
-              <p className="text-base sm:text-lg text-slate-100 font-normal max-w-xl leading-relaxed drop-shadow mt-4">
+              <p className="text-xs xs:text-sm sm:text-base lg:text-lg text-slate-200/90 font-normal max-w-xl leading-relaxed drop-shadow mt-2.5 sm:mt-4">
                 {stage.subheadline}
               </p>
             </div>
 
-            {/* Dual Action Buttons (Explore Research + Join Us) */}
-            <div className="flex flex-wrap items-center gap-4 pt-2">
+            {/* Dual Action Buttons (Side by Side or Stacked on narrow mobile) */}
+            <div className="grid grid-cols-1 xs:grid-cols-2 sm:flex sm:flex-row sm:items-center gap-2.5 sm:gap-4 pt-1 max-w-md sm:max-w-none">
               <Link
                 href={landingData.hero.primaryCtaHref || "/research"}
-                className="group inline-flex items-center gap-3.5 px-7 py-3.5 rounded-full border border-white/35 bg-black/35 hover:bg-white/20 backdrop-blur-md text-white text-xs sm:text-[13px] font-mono-scientific uppercase tracking-widest transition-all duration-300 shadow-xl hover:border-[#34D399] hover:shadow-[0_0_25px_rgba(52,211,153,0.35)] active:scale-95"
+                className="group inline-flex items-center justify-center gap-2 px-5 py-3 rounded-full border border-white/35 bg-black/40 hover:bg-white/20 backdrop-blur-md text-white text-xs sm:text-[13px] font-mono-scientific uppercase tracking-wider font-bold transition-all shadow-lg hover:border-[#34D399] hover:shadow-[0_0_20px_rgba(52,211,153,0.3)] active:scale-95 text-center"
               >
-                <ArrowRight className="w-4 h-4 text-[#34D399] group-hover:translate-x-0.5 transition-transform" />
-                <span className="font-bold">{landingData.hero.primaryCtaLabel || "EXPLORE RESEARCH"}</span>
-                <ArrowRight className="w-4 h-4 text-white/60 group-hover:translate-x-0.5 transition-transform" />
+                <span>{landingData.hero.primaryCtaLabel || "EXPLORE RESEARCH"}</span>
+                <ArrowRight className="w-3.5 h-3.5 text-[#34D399] group-hover:translate-x-0.5 transition-transform shrink-0" />
               </Link>
 
               <Link
-                href={landingData.hero.secondaryCtaHref || "/opportunities"}
-                className="group inline-flex items-center gap-2 px-6 py-3.5 rounded-full bg-[#10B981] hover:bg-[#34D399] text-[#04150C] text-xs sm:text-[13px] font-mono-scientific uppercase tracking-widest font-extrabold transition-all duration-300 shadow-xl shadow-emerald-500/25 hover:shadow-emerald-500/40 active:scale-95"
+                href={landingData.hero.secondaryCtaHref || "/people"}
+                className="group inline-flex items-center justify-center gap-2 px-5 py-3 rounded-full bg-[#10B981] hover:bg-[#34D399] text-[#04150C] text-xs sm:text-[13px] font-mono-scientific uppercase tracking-wider font-extrabold transition-all shadow-lg shadow-emerald-500/25 hover:shadow-emerald-500/40 active:scale-95 text-center"
               >
-                <span>{landingData.hero.secondaryCtaLabel || "JOIN US"}</span>
-                <ArrowRight className="w-4 h-4 stroke-[3] group-hover:translate-x-0.5 transition-transform" />
+                <span>{landingData.hero.secondaryCtaLabel || "MEET OUR LAB"}</span>
+                <ArrowRight className="w-3.5 h-3.5 stroke-[3] group-hover:translate-x-0.5 transition-transform shrink-0" />
               </Link>
             </div>
           </div>
 
-          {/* Right Column: 5-Node Interactive Scientific Pathway Arc on Far Right */}
-          <div className="lg:col-span-5 relative flex flex-col items-end justify-center">
+          {/* Right Column: 5-Node Interactive Scientific Pathway Arc (Visible only on Desktop/Tablet Landscape) */}
+          <div className="hidden lg:flex lg:col-span-5 relative flex-col items-end justify-center">
             <div className="relative w-full max-w-[340px] flex flex-col items-end min-h-[360px] justify-center">
               
-              {/* 5 Nodes Arc List (Fixed stable layout on far right) */}
+              {/* 5 Nodes Arc List */}
               <div className="relative flex flex-col space-y-4 sm:space-y-5 w-full items-end z-20">
                 
                 {/* SVG Curve Background */}
@@ -326,7 +325,6 @@ export function Hero({ data }: HeroProps) {
                     strokeWidth="1.5"
                     strokeDasharray="4 4"
                   />
-                  {/* Connecting trace to sampling */}
                   <path
                     d="M 60,350 C 40,390 10,410 0,440"
                     stroke="#34D399"
@@ -381,7 +379,7 @@ export function Hero({ data }: HeroProps) {
                 })}
               </div>
 
-              {/* Hover Details Panel (Positioned on the far right below the arc) */}
+              {/* Hover Details Panel */}
               <div
                 className={`absolute top-full right-0 mt-3 w-full max-w-[320px] p-4 rounded-2xl bg-[#04150C]/95 backdrop-blur-xl border border-[#10B981]/60 shadow-2xl text-left z-30 transition-all duration-200 pointer-events-none ${
                   hoveredNodeId
@@ -428,53 +426,70 @@ export function Hero({ data }: HeroProps) {
       </div>
 
       {/* Bottom Ticker & Workflow Stage Bar (Interactive Slide Selector & Auto-Progress) */}
-      <div className="relative z-20 w-full border-t border-white/15 bg-gradient-to-t from-black/80 via-black/40 to-transparent backdrop-blur-[2px] mt-12 py-6 sm:py-8">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col md:flex-row items-center justify-between gap-6">
+      <div className="relative z-20 w-full border-t border-white/15 bg-gradient-to-t from-black/85 via-black/50 to-transparent backdrop-blur-[4px] mt-8 sm:mt-12 py-4 sm:py-6 lg:py-8">
+        <div className="max-w-[1720px] mx-auto px-4 sm:px-6 lg:px-10 xl:px-12 flex flex-col md:flex-row items-center justify-between gap-4 sm:gap-6">
           
-          {/* Left: 01 / Dynamic Progress Track */}
-          <div className="flex items-center gap-4 flex-shrink-0">
-            <div className="flex items-center gap-2 text-xs text-white/80 font-semibold">
-              <span className="font-extrabold text-white">0{activeStage + 1}</span>
+          {/* Left: Dynamic Progress Track */}
+          <div className="flex items-center justify-between w-full md:w-auto gap-4">
+            <div className="flex items-center gap-2.5 text-xs text-white/80 font-mono-scientific font-semibold">
+              <span className="text-[10px] font-bold text-[#34D399] tracking-wider uppercase">STAGE</span>
+              <span className="font-extrabold text-white text-sm">0{activeStage + 1}</span>
               <span className="text-white/40">/</span>
-              <span className="text-white/70">
+              <span className="text-white/60">
                 {currentStages.length < 10 ? `0${currentStages.length}` : currentStages.length}
               </span>
             </div>
             
             {/* Horizontal Line Progress Indicator */}
-            <div className="w-20 sm:w-28 h-[2.5px] bg-white/20 rounded-full overflow-hidden">
+            <div className="flex-1 md:w-28 h-[3px] bg-white/20 rounded-full overflow-hidden">
               <div
-                className="h-full bg-[#10B981] transition-all duration-100 ease-linear"
+                className="h-full bg-[#10B981] transition-all duration-100 ease-linear shadow-[0_0_8px_#10B981]"
                 style={{ width: `${progress}%` }}
               />
             </div>
+
+            {/* Mobile-only stage navigation quick pills */}
+            <div className="flex md:hidden items-center gap-1.5">
+              {currentStages.map((_, idx) => (
+                <button
+                  key={idx}
+                  onClick={() => selectStage(idx)}
+                  className={`w-2.5 h-2.5 rounded-full transition-all cursor-pointer ${
+                    idx === activeStage ? "bg-[#34D399] scale-125" : "bg-white/30"
+                  }`}
+                  aria-label={`Go to slide ${idx + 1}`}
+                />
+              ))}
+            </div>
           </div>
 
-          {/* Center: Interactive Workflow Slides */}
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-6 sm:gap-10 w-full max-w-4xl">
+          {/* Center: Interactive Workflow Slides (Desktop/Tablet Grid) */}
+          <div className="hidden md:grid grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-8 w-full max-w-4xl">
             {currentStages.map((item, idx) => {
               const isActive = idx === activeStage;
               return (
                 <button
                   key={item.id || `stage-${idx}`}
                   onClick={() => selectStage(idx)}
-                  className={`text-left group transition-all duration-300 cursor-pointer ${
-                    isActive ? "opacity-100 scale-100" : "opacity-60 hover:opacity-100"
+                  className={`text-left group transition-all duration-300 cursor-pointer p-2 rounded-xl border ${
+                    isActive
+                      ? "bg-white/10 border-[#10B981]/60 shadow-lg opacity-100"
+                      : "border-transparent opacity-60 hover:opacity-100 hover:bg-white/5"
                   }`}
                 >
-                  <div className="flex items-center gap-2 mb-1">
+                  <div className="flex items-center gap-2 mb-0.5">
                     {isActive && (
-                      <span className="w-2 h-2 rounded-full bg-[#10B981] animate-pulse" />
+                      <span className="w-1.5 h-1.5 rounded-full bg-[#10B981] animate-pulse shrink-0" />
                     )}
                     <span
-                      className={`text-xs font-bold tracking-wide ${
+                      className={`text-xs font-bold tracking-wide truncate ${
                         isActive ? "text-[#34D399]" : "text-white/90 group-hover:text-white"
                       }`}
                     >
                       {item.step} {item.name}
                     </span>
                   </div>
-                  <p className="text-[11px] font-medium tracking-normal text-white/70 group-hover:text-white/90 truncate">
+                  <p className="text-[10px] font-medium text-white/70 group-hover:text-white/90 truncate">
                     {item.flow}
                   </p>
                 </button>
@@ -486,9 +501,9 @@ export function Hero({ data }: HeroProps) {
           <button
             onClick={scrollToNext}
             aria-label="Scroll down to page content"
-            className="flex-shrink-0 flex items-center gap-2 group text-white/80 hover:text-white transition-colors cursor-pointer"
+            className="hidden md:flex flex-shrink-0 items-center gap-2 group text-white/80 hover:text-white transition-colors cursor-pointer"
           >
-            <span className="text-[11px] font-bold tracking-wider uppercase">
+            <span className="text-[11px] font-bold tracking-wider uppercase font-mono-scientific">
               SCROLL
             </span>
             <div className="w-6 h-6 rounded-full border border-white/30 flex items-center justify-center group-hover:border-[#34D399] transition-colors">

@@ -199,6 +199,29 @@ p {
   border-color: var(--nav-border);
 }
 
+html {
+  scroll-behavior: smooth;
+  scroll-padding-top: 80px;
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+button, a, input, select, textarea {
+  touch-action: manipulation;
+}
+
+/* Momentum scrolling for iOS / Android */
+* {
+  -webkit-overflow-scrolling: touch;
+}
+
 .theme-card {
   background-color: var(--card-bg);
   border-color: var(--card-border);

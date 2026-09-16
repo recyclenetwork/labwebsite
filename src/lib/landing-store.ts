@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { createClient } from "@/lib/supabase/client";
 import { idbGet, idbSet, idbDelete, safeLocalStorageSet, safeLocalStorageGet } from "@/lib/storage/idb-storage";
 
 export interface LandingContentData {
@@ -306,7 +307,7 @@ export const DEFAULT_LANDING_DATA: LandingContentData = {
   },
   projectsSection: {
     badge: "FLAGSHIP RESEARCH",
-    title: "Completed Projects & Scientific Breakthroughs",
+    title: "Research Projects & Scientific Breakthroughs",
     subtitle: "High-impact investigative projects funded by national and international scientific bodies.",
   },
   partnersSection: {
@@ -396,7 +397,7 @@ export const DEFAULT_LANDING_DATA: LandingContentData = {
     publicationsCount: "74+",
     citationsCount: "2,840+",
     hIndex: "26",
-    imageSrc: "/images/hero-scientist.jpg",
+    imageSrc: "",
     scholarUrl: "https://scholar.google.com/citations?user=example-rahman",
     researchgateUrl: "https://www.researchgate.net/profile/Mostafizur-Rahman",
   },
@@ -614,12 +615,14 @@ export function sanitizeLandingData(data: LandingContentData): LandingContentDat
     sanitized.aboutPage = about;
   }
 
-  // Sanitize PI section image if pointing to legacy unsplash URL
-  if (sanitized.piSection && (!sanitized.piSection.imageSrc || sanitized.piSection.imageSrc.includes("unsplash.com"))) {
-    sanitized.piSection = {
-      ...sanitized.piSection,
-      imageSrc: "/images/hero-scientist.jpg",
-    };
+  // Sanitize PI section image: remove legacy placeholders
+  if (sanitized.piSection) {
+    if (sanitized.piSection.imageSrc === "/images/hero-scientist.jpg" || sanitized.piSection.imageSrc?.includes("photo-1534528741775-53994a69daeb")) {
+      sanitized.piSection = {
+        ...sanitized.piSection,
+        imageSrc: "",
+      };
+    }
   }
 
   // Sanitize contact aerial image if pointing to external unsplash placeholder
@@ -649,14 +652,94 @@ export function getStoredLandingData(): LandingContentData {
   return DEFAULT_LANDING_DATA;
 }
 
-export function saveLandingData(data: LandingContentData): boolean {
+export async function fetchLandingDataAsync(): Promise<LandingContentData> {
+  // 1. First attempt to fetch live from Supabase site_settings
+  try {
+    const supabase = createClient();
+    const { data, error } = await (supabase as any)
+      .from("site_settings")
+      .select("value")
+      .eq("key", "landing_content")
+      .maybeSingle();
+
+    const value = (data as any)?.value;
+    if (!error && value && typeof value === "object") {
+      const remoteData = sanitizeLandingData(deepMerge(DEFAULT_LANDING_DATA, value));
+      // Update local storage cache
+      if (typeof window !== "undefined") {
+        safeLocalStorageSet(STORAGE_KEY, remoteData);
+        idbSet(STORAGE_KEY, remoteData).catch(() => {});
+      }
+      return remoteData;
+    }
+  } catch (err) {
+    // Supabase error or offline - fallback to local storage
+  }
+
+  // 2. Check IndexedDB
+  if (typeof window !== "undefined") {
+    try {
+      const idbData = await idbGet<LandingContentData>(STORAGE_KEY);
+      if (idbData) {
+        return sanitizeLandingData(deepMerge(DEFAULT_LANDING_DATA, idbData));
+      }
+    } catch {}
+  }
+
+  // 3. Fallback to localStorage / default
+  return getStoredLandingData();
+}
+
+export async function saveLandingDataAsync(data: LandingContentData): Promise<boolean> {
   if (typeof window === "undefined") return false;
+  const sanitized = sanitizeLandingData(data);
   try {
     // 1. Save directly into IndexedDB (guaranteed persistent storage)
-    idbSet(STORAGE_KEY, data).catch((err) => console.warn("IDB landing save error:", err));
+    await idbSet(STORAGE_KEY, sanitized);
 
     // 2. Mirror into localStorage safely without throwing QuotaExceededError
-    safeLocalStorageSet(STORAGE_KEY, data);
+    safeLocalStorageSet(STORAGE_KEY, sanitized);
+
+    // 3. Sync to Supabase site_settings
+    try {
+      const supabase = createClient();
+      await (supabase as any).from("site_settings").upsert({
+        key: "landing_content",
+        value: sanitized,
+        updated_at: new Date().toISOString(),
+      });
+    } catch (syncErr) {
+      console.warn("Supabase landing content sync warning:", syncErr);
+    }
+
+    window.dispatchEvent(new Event("landing-content-updated"));
+    return true;
+  } catch (e: any) {
+    console.error("Failed to save landing content:", e);
+    return false;
+  }
+}
+
+export function saveLandingData(data: LandingContentData): boolean {
+  if (typeof window === "undefined") return false;
+  const sanitized = sanitizeLandingData(data);
+  try {
+    idbSet(STORAGE_KEY, sanitized).catch((err) => console.warn("IDB landing save error:", err));
+    safeLocalStorageSet(STORAGE_KEY, sanitized);
+
+    // Sync in background to Supabase
+    try {
+      const supabase = createClient();
+      (supabase as any)
+        .from("site_settings")
+        .upsert({
+          key: "landing_content",
+          value: sanitized,
+          updated_at: new Date().toISOString(),
+        })
+        .then(() => {})
+        .catch((err: any) => console.warn("Background Supabase save warning:", err));
+    } catch {}
 
     window.dispatchEvent(new Event("landing-content-updated"));
     return true;
@@ -672,6 +755,20 @@ export function resetLandingData(): LandingContentData {
     try {
       localStorage.removeItem(STORAGE_KEY);
     } catch {}
+
+    try {
+      const supabase = createClient();
+      (supabase as any)
+        .from("site_settings")
+        .upsert({
+          key: "landing_content",
+          value: DEFAULT_LANDING_DATA,
+          updated_at: new Date().toISOString(),
+        })
+        .then(() => {})
+        .catch(() => {});
+    } catch {}
+
     window.dispatchEvent(new Event("landing-content-updated"));
   }
   return DEFAULT_LANDING_DATA;
@@ -681,23 +778,19 @@ export function useLandingData() {
   const [data, setData] = useState<LandingContentData>(DEFAULT_LANDING_DATA);
 
   useEffect(() => {
-    // 1. Synchronously load from localStorage cache
+    // 1. Synchronously load from localStorage cache for instant render
     const initial = getStoredLandingData();
     setData(initial);
 
-    // 2. Asynchronously check IndexedDB in case it has richer data
-    idbGet<LandingContentData>(STORAGE_KEY).then((idbData) => {
-      if (idbData) {
-        setData(sanitizeLandingData(deepMerge(DEFAULT_LANDING_DATA, idbData)));
-      }
+    // 2. Asynchronously fetch from Supabase (or IndexedDB)
+    fetchLandingDataAsync().then((latest) => {
+      setData(latest);
     }).catch(() => {});
 
     const handleUpdate = () => {
       setData(getStoredLandingData());
-      idbGet<LandingContentData>(STORAGE_KEY).then((idbData) => {
-        if (idbData) {
-          setData(sanitizeLandingData(deepMerge(DEFAULT_LANDING_DATA, idbData)));
-        }
+      fetchLandingDataAsync().then((latest) => {
+        setData(latest);
       }).catch(() => {});
     };
 

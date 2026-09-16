@@ -6,10 +6,26 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { Lock, Mail, Eye, EyeOff, ShieldCheck, ArrowLeft, Loader2, AlertCircle } from "lucide-react";
 
+function getSafeRedirectUrl(target: string | null): string {
+  if (!target) return "/admin";
+  const decoded = decodeURIComponent(target).trim();
+  if (
+    decoded.startsWith("/") &&
+    !decoded.startsWith("//") &&
+    !decoded.startsWith("/\\") &&
+    !decoded.includes("://") &&
+    decoded !== "/admin/login" &&
+    decoded !== "/auth/login"
+  ) {
+    return decoded;
+  }
+  return "/admin";
+}
+
 function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const redirectTo = searchParams.get("redirectTo") || "/admin";
+  const safeRedirectTo = getSafeRedirectUrl(searchParams.get("redirectTo"));
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -25,7 +41,7 @@ function LoginForm() {
     try {
       const supabase = createClient();
       const { data, error } = await supabase.auth.signInWithPassword({
-        email: email.trim(),
+        email: email.trim().toLowerCase(),
         password,
       });
 
@@ -36,8 +52,7 @@ function LoginForm() {
       }
 
       if (data?.user) {
-        router.push(redirectTo);
-        router.refresh();
+        window.location.href = safeRedirectTo;
       }
     } catch (err: any) {
       setErrorMsg(err?.message || "An unexpected error occurred. Please check your credentials.");
@@ -74,9 +89,18 @@ function LoginForm() {
 
       <form onSubmit={handleLogin} className="space-y-4">
         <div>
-          <label className="block text-xs font-medium text-slate-300 mb-1.5">
-            Authorized Email
-          </label>
+          <div className="flex items-center justify-between mb-1.5">
+            <label className="block text-xs font-medium text-slate-300">
+              Authorized Email
+            </label>
+            <button
+              type="button"
+              onClick={() => setEmail("sasajeeb1@gmail.com")}
+              className="text-[10px] text-emerald-400 hover:text-emerald-300 underline cursor-pointer"
+            >
+              Use sasajeeb1@gmail.com
+            </button>
+          </div>
           <div className="relative">
             <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
               <Mail className="w-4 h-4" />
@@ -86,7 +110,7 @@ function LoginForm() {
               required
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              placeholder="admin@ecotox-ju.ac.bd"
+              placeholder="sasajeeb1@gmail.com"
               className="w-full pl-10 pr-4 py-2.5 bg-[#020F07]/90 border border-emerald-500/20 rounded-xl text-sm text-white placeholder-slate-500 focus:outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-400/20 transition-all"
             />
           </div>

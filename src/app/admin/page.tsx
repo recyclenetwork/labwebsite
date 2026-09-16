@@ -21,23 +21,16 @@ import {
   Sparkles,
   CheckCircle2
 } from "lucide-react";
-import { getPublishedProjects } from "@/lib/projects/queries";
-import { getPublishedPublications } from "@/lib/publications/queries";
+import { getPublishedProjects, getLocalProjects } from "@/lib/projects/queries";
+import { getPublishedPublications, getLocalPublications } from "@/lib/publications/queries";
 import { getTeamMembers } from "@/lib/team/store";
 import { getPublishedNews } from "@/lib/news/queries";
+import { getInquiries } from "@/lib/inbox/store";
 import { ProjectWithRelations } from "@/lib/projects/types";
 import { PublicationWithRelations } from "@/lib/publications/types";
 import { TeamMember } from "@/lib/team/types";
 import { NewsArticle } from "@/lib/news/types";
-
-interface ApplicationItem {
-  id: string;
-  applicant_name: string;
-  degree_level: string;
-  status: string;
-  created_at: string;
-  research_interest?: string;
-}
+import { Inquiry } from "@/lib/inbox/types";
 
 export default function AdminDashboardPage() {
   const { theme } = useAdminTheme();
@@ -52,7 +45,7 @@ export default function AdminDashboardPage() {
   const [publications, setPublications] = useState<PublicationWithRelations[]>([]);
   const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
   const [newsArticles, setNewsArticles] = useState<NewsArticle[]>([]);
-  const [applications, setApplications] = useState<ApplicationItem[]>([]);
+  const [inquiries, setInquiries] = useState<Inquiry[]>([]);
   const [lastSyncTime, setLastSyncTime] = useState<string>("");
 
   const loadAllData = async () => {
@@ -72,63 +65,36 @@ export default function AdminDashboardPage() {
         // use default
       }
 
-      // Parallel Fetch Real Data
-      const [
-        allProjects,
-        allPublications,
-        allTeam,
-        allNews,
-        appsRes
-      ] = await Promise.all([
+      // Parallel Fetch Real Data safely
+      const results = await Promise.allSettled([
         getPublishedProjects({}, true),
         getPublishedPublications({}, true),
         getTeamMembers(),
         getPublishedNews({}, true),
-        (supabase as any).from("applications").select("*").order("created_at", { ascending: false }),
+        getInquiries(),
       ]);
 
-      setProjects(allProjects || []);
-      setPublications(allPublications || []);
-      setTeamMembers(allTeam || []);
-      setNewsArticles(allNews || []);
+      const loadedProjects = results[0].status === "fulfilled" && results[0].value.length > 0 ? results[0].value : getLocalProjects();
+      const loadedPubs = results[1].status === "fulfilled" && results[1].value.length > 0 ? results[1].value : getLocalPublications();
+      const loadedTeam = results[2].status === "fulfilled" && results[2].value.length > 0 ? results[2].value : await getTeamMembers();
+      const loadedNews = results[3].status === "fulfilled" && results[3].value.length > 0 ? results[3].value : await getPublishedNews({}, true);
+      const loadedInquiries = results[4].status === "fulfilled" && results[4].value.length > 0 ? results[4].value : await getInquiries();
 
-      const rawApps = appsRes?.data || [];
-      if (rawApps.length > 0) {
-        setApplications(rawApps);
-      } else {
-        // Fallback default inquiries for demonstration resilience
-        setApplications([
-          {
-            id: "1",
-            applicant_name: "Farhana Islam",
-            degree_level: "Master of Science (MS)",
-            status: "new",
-            created_at: new Date(Date.now() - 3600000 * 3).toISOString(),
-            research_interest: "Microplastic ingestion dynamics in freshwater teleosts."
-          },
-          {
-            id: "2",
-            applicant_name: "Mahmudul Hasan",
-            degree_level: "Doctor of Philosophy (PhD)",
-            status: "reviewing",
-            created_at: new Date(Date.now() - 86400000 * 2).toISOString(),
-            research_interest: "Heavy metal speciation in wetland sediments."
-          },
-          {
-            id: "3",
-            applicant_name: "Tanvir Chowdhury",
-            degree_level: "Research Assistant",
-            status: "new",
-            created_at: new Date(Date.now() - 86400000 * 4).toISOString(),
-            research_interest: "Pesticide residues in agricultural catchments."
-          }
-        ]);
-      }
+      setProjects(loadedProjects || []);
+      setPublications(loadedPubs || []);
+      setTeamMembers(loadedTeam || []);
+      setNewsArticles(loadedNews || []);
+      setInquiries(loadedInquiries || []);
 
       const now = new Date();
       setLastSyncTime(`${now.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" })} - ${now.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" })}`);
     } catch (err) {
       console.error("Dashboard real-time data sync error:", err);
+      // Fallback to local stores
+      setProjects(getLocalProjects());
+      setPublications(getLocalPublications());
+      getTeamMembers().then(setTeamMembers).catch(() => {});
+      getInquiries().then(setInquiries).catch(() => {});
     } finally {
       setLoading(false);
     }
@@ -168,9 +134,14 @@ export default function AdminDashboardPage() {
   const draftPubs = publications.filter((p) => !p.is_published).length;
   const totalCitations = publications.reduce((acc, p) => acc + (p.citation_count || 0), 0);
 
-  const activeResearchers = teamMembers.filter((m) => m.isActive).length;
-  const newApplications = applications.filter((a) => a.status === "new").length;
-  const totalApplications = applications.length;
+  const activeResearchers = teamMembers.filter((m) => m.isActive !== false).length;
+
+  const studentApplications = inquiries.filter((i) => i.type === "student_application");
+  const contactMessages = inquiries.filter((i) => i.type === "contact_form" || !i.type);
+  const newApplications = studentApplications.filter((a) => a.status === "new").length;
+  const totalApplications = studentApplications.length;
+  const newMessages = contactMessages.filter((m) => m.status === "new").length;
+  const totalMessages = contactMessages.length;
 
   // Real Publications By Year (Last 5 Years)
   const currentYear = new Date().getFullYear();
@@ -388,10 +359,10 @@ export default function AdminDashboardPage() {
           </div>
           <div>
             <div className={`text-3xl font-extrabold tracking-tight ${titleText}`}>
-              {String(totalApplications).padStart(2, "0")}
+              {String(totalMessages).padStart(2, "0")}
             </div>
             <p className={`text-[11px] ${subText} mt-0.5`}>
-              {String(newApplications).padStart(2, "0")} Unread
+              {String(newMessages).padStart(2, "0")} Unread
             </p>
           </div>
           <div className="flex items-center gap-1 text-[11px] font-bold text-emerald-600 dark:text-emerald-400">
@@ -573,7 +544,7 @@ export default function AdminDashboardPage() {
                 {[
                   { count: String(draftPubs).padStart(2, "0"), text: "Draft publications", action: "Review →", href: "/admin/publications" },
                   { count: String(newApplications).padStart(2, "0"), text: "New applications", action: "Review →", href: "/admin/inbox" },
-                  { count: String(newApplications).padStart(2, "0"), text: "Unread messages", action: "View →", href: "/admin/inbox" },
+                  { count: String(newMessages).padStart(2, "0"), text: "Unread messages", action: "View →", href: "/admin/inbox" },
                   { count: String(draftProjects).padStart(2, "0"), text: "Project drafts", action: "Edit →", href: "/admin/projects" },
                   { count: "01", text: "Database sync check", action: "Review →", href: "/admin/settings" },
                 ].map((item, idx) => (
@@ -875,8 +846,8 @@ export default function AdminDashboardPage() {
                 </div>
               )}
 
-              {/* Application activity */}
-              {applications[0] && (
+              {/* Inquiry / Application activity */}
+              {inquiries[0] && (
                 <div className="flex items-start gap-3">
                   <div className={`p-2 rounded-xl shrink-0 mt-0.5 ${
                     isLight ? "bg-slate-100 text-slate-600" : "bg-slate-800 text-slate-300"
@@ -885,13 +856,13 @@ export default function AdminDashboardPage() {
                   </div>
                   <div className="flex-1 min-w-0">
                     <h4 className={`text-xs font-bold leading-tight truncate ${titleText}`}>
-                      New application received
+                      {inquiries[0].type === "student_application" ? "New application received" : "New inquiry message"}
                     </h4>
                     <p className={`text-[11px] ${subText} truncate mt-0.5`}>
-                      {applications[0].applicant_name} ({applications[0].degree_level})
+                      {inquiries[0].name} ({inquiries[0].degree_level || inquiries[0].subject || "General Inquiry"})
                     </p>
                     <span className="text-[10px] text-slate-400">
-                      Status: {applications[0].status}
+                      Status: {inquiries[0].status}
                     </span>
                   </div>
                 </div>

@@ -37,27 +37,48 @@ const STORAGE_KEY = "ecotox_lab_projects_v2";
 let memoryProjects: ProjectWithRelations[] = [...SEED_PROJECTS];
 
 export function getLocalProjects(): ProjectWithRelations[] {
+  let storedProjects: ProjectWithRelations[] = [];
   if (typeof window !== "undefined") {
     try {
-      const stored = safeLocalStorageGet<ProjectWithRelations[]>(STORAGE_KEY) || safeLocalStorageGet<ProjectWithRelations[]>("lab_projects_store");
+      const stored =
+        safeLocalStorageGet<ProjectWithRelations[]>(STORAGE_KEY) ||
+        safeLocalStorageGet<ProjectWithRelations[]>("lab_projects_store");
       if (stored && Array.isArray(stored) && stored.length > 0) {
-        memoryProjects = stored;
+        storedProjects = stored;
       }
     } catch {
       // ignore
     }
   }
+
+  // Merge stored user edits with SEED_PROJECTS so seed records are never erased
+  const storedIds = new Set(storedProjects.map((p) => p.id));
+  const storedSlugs = new Set(storedProjects.map((p) => p.slug));
+
+  const merged = [
+    ...storedProjects,
+    ...SEED_PROJECTS.filter((sp) => !storedIds.has(sp.id) && !storedSlugs.has(sp.slug)),
+  ];
+
+  memoryProjects = merged;
   return memoryProjects;
 }
 
 export function saveLocalProjects(projects: ProjectWithRelations[]): void {
-  memoryProjects = projects;
+  const existingIds = new Set(projects.map((p) => p.id));
+  const existingSlugs = new Set(projects.map((p) => p.slug));
+  const completeList = [
+    ...projects,
+    ...SEED_PROJECTS.filter((sp) => !existingIds.has(sp.id) && !existingSlugs.has(sp.slug)),
+  ];
+
+  memoryProjects = completeList;
   if (typeof window !== "undefined") {
     try {
-      safeLocalStorageSet(STORAGE_KEY, projects);
-      safeLocalStorageSet("lab_projects_store", projects);
-      idbSet(STORAGE_KEY, projects).catch(() => {});
-      window.dispatchEvent(new CustomEvent("lab_projects_updated", { detail: projects }));
+      safeLocalStorageSet(STORAGE_KEY, completeList);
+      safeLocalStorageSet("lab_projects_store", completeList);
+      idbSet(STORAGE_KEY, completeList).catch(() => {});
+      window.dispatchEvent(new CustomEvent("lab_projects_updated", { detail: completeList }));
       window.dispatchEvent(new Event("storage"));
     } catch {
       // ignore
@@ -92,16 +113,6 @@ export async function getPublishedProjects(
   filters: ProjectFilterParams = {},
   includeDrafts: boolean = false
 ): Promise<ProjectWithRelations[]> {
-  // If running in browser and we have stored projects in IndexedDB/localStorage, use them
-  if (typeof window !== "undefined") {
-    try {
-      const local = getLocalProjects();
-      if (local && Array.isArray(local) && local.length > 0) {
-        return filterLocalProjects(local, filters, includeDrafts);
-      }
-    } catch {}
-  }
-
   try {
     const supabase = getQueryClient();
     let query = supabase
@@ -203,8 +214,24 @@ export async function getPublishedProjects(
       publications: (row.publication_projects || []).map((pp: any) => pp.publications).filter(Boolean),
     }));
 
-    // Apply in-memory area and search filters if relations required client-side filtering
-    return filterLocalProjects(formatted, filters, includeDrafts);
+    // Merge remote projects with local projects and SEED_PROJECTS to keep all records in sync
+    const local = getLocalProjects();
+    const existingIds = new Set(formatted.map((p) => p.id));
+    const existingSlugs = new Set(formatted.map((p) => p.slug));
+
+    const merged = [
+      ...formatted,
+      ...local.filter((lp) => !existingIds.has(lp.id) && !existingSlugs.has(lp.slug) && (includeDrafts || lp.is_published !== false)),
+      ...SEED_PROJECTS.filter((sp) => !existingIds.has(sp.id) && !existingSlugs.has(sp.slug) && (includeDrafts || sp.is_published !== false)),
+    ];
+
+    // Keep local cache updated with live merged data
+    if (typeof window !== "undefined" && merged.length > 0) {
+      saveLocalProjects(merged);
+    }
+
+    // Apply in-memory area and search filters
+    return filterLocalProjects(merged.length > 0 ? merged : formatted, filters, includeDrafts);
   } catch {
     return filterLocalProjects(getLocalProjects(), filters, includeDrafts);
   }

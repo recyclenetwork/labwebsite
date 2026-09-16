@@ -148,8 +148,8 @@ export const SEED_PROJECTS: ProjectWithRelations[] = [
     image_alt: "Laboratory researcher examining microplastic particles under automated optical microscope",
     featured_image: "https://images.unsplash.com/photo-1532187863486-abf9dbad1b69?auto=format&fit=crop&w=1600&q=85",
     gallery: [
-      "https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?auto=format&fit=crop&w=1200&q=80",
-      "https://images.unsplash.com/photo-1579154204601-01588f351e67?auto=format&fit=crop&w=1200&q=80"
+      "/images/gallery/field-sampling.jpg",
+      "/images/gallery/microscopy-imaging.jpg"
     ],
     display_order: 1,
     is_featured: true,
@@ -197,11 +197,11 @@ export const SEED_PROJECTS: ProjectWithRelations[] = [
     study_area_description: "High-density textile and tannery catchment areas bordering Dhaka city, characterized by intensive vegetable cultivation and canal irrigation.",
     findings: "Cadmium and Lead bioaccumulation in spinach and amaranth species consistently exceeded FAO/WHO codex maximum permissible levels during dry irrigation cycles.",
     outputs: "2 Peer-Reviewed Papers, 1 GIS Soil Risk Atlas, Policy Recommendations for Wastewater Irrigation Zoning.",
-    hero_image: "https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?auto=format&fit=crop&w=1600&q=85",
+    hero_image: "/images/slide-1-field.jpg",
     image_alt: "Soil and water sample collection in agricultural wetland monitoring site",
-    featured_image: "https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?auto=format&fit=crop&w=1600&q=85",
+    featured_image: "/images/slide-1-field.jpg",
     gallery: [
-      "https://images.unsplash.com/photo-1544377193-33dcf4d68fb5?auto=format&fit=crop&w=1200&q=80"
+      "/images/gallery/field-sampling.jpg"
     ],
     display_order: 2,
     is_featured: true,

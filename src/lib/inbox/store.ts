@@ -118,20 +118,20 @@ export async function submitInquiry(data: Partial<Inquiry>): Promise<Inquiry> {
 
   const completeInquiry: Inquiry = {
     id: newId,
-    name: data.name || "Anonymous Visitor",
-    email: data.email || "no-email@provided.com",
-    phone: data.phone || "",
-    organization: data.organization || "",
-    subject: data.subject || "General Inquiry",
-    category: data.category || "General Inquiry",
-    message: data.message || "",
+    name: (data.name || "Anonymous Visitor").trim().slice(0, 200),
+    email: (data.email || "no-email@provided.com").trim().slice(0, 250),
+    phone: (data.phone || "").trim().slice(0, 50),
+    organization: (data.organization || "").trim().slice(0, 300),
+    subject: (data.subject || "General Inquiry").trim().slice(0, 400),
+    category: (data.category || "General Inquiry").trim().slice(0, 150),
+    message: (data.message || "").trim().slice(0, 10000),
     type: data.type || "contact_form",
     status: "new",
     created_at: now,
-    degree_level: data.degree_level || "",
-    university: data.university || "",
-    research_interest: data.research_interest || "",
-    cover_letter: data.cover_letter || "",
+    degree_level: (data.degree_level || "").trim().slice(0, 100),
+    university: (data.university || "").trim().slice(0, 300),
+    research_interest: (data.research_interest || "").trim().slice(0, 2000),
+    cover_letter: (data.cover_letter || "").trim().slice(0, 15000),
   };
 
   // Attempt Supabase insert

@@ -8,7 +8,7 @@ import { TeamHero } from "@/components/public/team/team-hero";
 import { PIShowcase } from "@/components/public/team/pi-showcase";
 import { TeamCarouselRow } from "@/components/public/team/team-carousel-row";
 import { MemberDetailModal } from "@/components/public/team/member-detail-modal";
-import { getTeamMembers } from "@/lib/team/store";
+import { getTeamMembers, getCachedTeamMembers } from "@/lib/team/store";
 import { TeamMember } from "@/lib/team/types";
 import {
   Users,
@@ -21,8 +21,8 @@ import {
 } from "lucide-react";
 
 export default function TeamPage() {
-  const [members, setMembers] = React.useState<TeamMember[]>([]);
-  const [loading, setLoading] = React.useState(true);
+  const [members, setMembers] = React.useState<TeamMember[]>(() => getCachedTeamMembers());
+  const [loading, setLoading] = React.useState(() => getCachedTeamMembers().length === 0);
   const [searchQuery, setSearchQuery] = React.useState("");
   const [activeFilter, setActiveFilter] = React.useState("all");
   const [selectedMember, setSelectedMember] = React.useState<TeamMember | null>(null);
@@ -39,6 +39,18 @@ export default function TeamPage() {
       }
     }
     load();
+
+    const handleUpdate = () => {
+      load();
+    };
+
+    window.addEventListener("team-members-updated", handleUpdate);
+    window.addEventListener("storage", handleUpdate);
+
+    return () => {
+      window.removeEventListener("team-members-updated", handleUpdate);
+      window.removeEventListener("storage", handleUpdate);
+    };
   }, []);
 
   // Filtered members

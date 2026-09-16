@@ -11,6 +11,12 @@ export async function updateSession(request: NextRequest) {
   const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
   if (!supabaseUrl || !supabaseAnonKey) {
+    if (request.nextUrl.pathname.startsWith("/admin")) {
+      const url = request.nextUrl.clone();
+      url.pathname = "/auth/login";
+      url.searchParams.set("redirectTo", request.nextUrl.pathname);
+      return NextResponse.redirect(url);
+    }
     return supabaseResponse;
   }
 
@@ -44,6 +50,12 @@ export async function updateSession(request: NextRequest) {
 
   // Admin route protection logic
   if (request.nextUrl.pathname.startsWith("/admin")) {
+    if (request.nextUrl.pathname === "/admin/login") {
+      const url = request.nextUrl.clone();
+      url.pathname = "/auth/login";
+      url.searchParams.delete("redirectTo");
+      return NextResponse.redirect(url);
+    }
     if (!user) {
       const url = request.nextUrl.clone();
       url.pathname = "/auth/login";
