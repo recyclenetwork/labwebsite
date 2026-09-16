@@ -52,15 +52,7 @@ export function FeaturedProject() {
   }, []);
 
   const formatProjects = React.useCallback((items: ProjectWithRelations[]): DisplayProject[] => {
-    // Ensure all seed projects are present so no projects are missing
-    const itemIds = new Set((items || []).map((p) => p.id));
-    const itemSlugs = new Set((items || []).map((p) => p.slug));
-    const combined = [
-      ...(items || []),
-      ...SEED_PROJECTS.filter((sp) => !itemIds.has(sp.id) && !itemSlugs.has(sp.slug)),
-    ];
-
-    const published = combined.filter((p) => p.is_published !== false);
+    const published = (items || []).filter((p) => p.is_published !== false);
 
     // Sort: Featured first, then display_order, then newest
     const sorted = [...published].sort((a, b) => {
