@@ -223,6 +223,36 @@ export const INITIAL_TEAM_MEMBERS: TeamMember[] = [
   },
 
   // ==========================================
+  // 1b. RESEARCH FELLOWS & GRADUATE SCHOLARS
+  // ==========================================
+  {
+    id: "team-grad-sajeeb",
+    name: "Shahed Anan Sajeeb",
+    slug: "shahed-anan-sajeeb",
+    role: "Research Fellow",
+    category: "graduate",
+    department: "Department of Environmental Sciences",
+    affiliation: "Jahangirnagar University",
+    bio: "Conducting advanced computational ecotoxicology and environmental health risk assessments. Specialized in aquatic contaminant transport modeling and polymer degradation pathways.",
+    researchInterests: [
+      "Environmental Science",
+      "Ecotoxicology",
+      "Contaminant Modeling",
+      "Aquatic Health",
+    ],
+    skills: ["Ecotoxicological Modeling", "Python / R", "Field Sampling", "Microplastic Analysis"],
+    education: [
+      "M.Sc. in Environmental Sciences, Jahangirnagar University (2024 – Present)",
+      "B.Sc. (Hons.) in Environmental Sciences, Jahangirnagar University (2019 – 2023)",
+    ],
+    email: "sasajeeb1@gmail.com",
+    imageSrc: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=600&q=80",
+    imageAlt: "Shahed Anan Sajeeb - Research Fellow",
+    orderIndex: 2,
+    isActive: true,
+  },
+
+  // ==========================================
   // 2. UNDERGRADUATE MEMBERS (4th Year / Senior Thesis & Interns)
   // ==========================================
   {
