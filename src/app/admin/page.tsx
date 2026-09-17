@@ -74,11 +74,11 @@ export default function AdminDashboardPage() {
         getInquiries(),
       ]);
 
-      const loadedProjects = results[0].status === "fulfilled" && results[0].value.length > 0 ? results[0].value : getLocalProjects();
-      const loadedPubs = results[1].status === "fulfilled" && results[1].value.length > 0 ? results[1].value : getLocalPublications();
-      const loadedTeam = results[2].status === "fulfilled" && results[2].value.length > 0 ? results[2].value : await getTeamMembers();
-      const loadedNews = results[3].status === "fulfilled" && results[3].value.length > 0 ? results[3].value : await getPublishedNews({}, true);
-      const loadedInquiries = results[4].status === "fulfilled" && results[4].value.length > 0 ? results[4].value : await getInquiries();
+      const loadedProjects = results[0].status === "fulfilled" ? results[0].value : getLocalProjects();
+      const loadedPubs = results[1].status === "fulfilled" ? results[1].value : getLocalPublications();
+      const loadedTeam = results[2].status === "fulfilled" ? results[2].value : [];
+      const loadedNews = results[3].status === "fulfilled" ? results[3].value : [];
+      const loadedInquiries = results[4].status === "fulfilled" ? results[4].value : [];
 
       setProjects(loadedProjects || []);
       setPublications(loadedPubs || []);

@@ -1,75 +1,15 @@
 import { Inquiry, InquiryFormData, InquiryStatus } from "./types";
 import { createClient } from "@/lib/supabase/client";
+import { idbGet, idbSet, safeLocalStorageGet, safeLocalStorageSet } from "@/lib/storage/idb-storage";
 
-const LOCAL_STORAGE_KEY = "ecotox_lab_inbox_inquiries_v1";
-
-const INITIAL_INQUIRIES: Inquiry[] = [
-  {
-    id: "inq-1",
-    name: "Dr. Sarah Jenkins",
-    email: "s.jenkins@oxford.ac.uk",
-    phone: "+44 1865 270000",
-    organization: "University of Oxford, Dept. of Zoology",
-    subject: "Joint Global South Estuarine Microplastics Project",
-    category: "Research Collaboration",
-    message: "Dear Dr. Kabir and team, we have been following your groundbreaking high-resolution micro-FTIR mapping along the Meghna River. We would like to explore submitting a joint UKRI-GCRF grant proposal focused on transboundary aquatic polymer transport. Could we schedule a 30-minute virtual meeting next Tuesday?",
-    type: "contact_form",
-    status: "new",
-    created_at: new Date(Date.now() - 3600000 * 4).toISOString(), // 4 hours ago
-  },
-  {
-    id: "inq-2",
-    name: "Farhana Islam",
-    email: "farhana.ju.env@gmail.com",
-    phone: "+880 1712-345678",
-    organization: "Jahangirnagar University",
-    subject: "MS Thesis Researcher Application (Spring Cohort)",
-    category: "Student Admission / Thesis",
-    message: "I am writing to express my strong interest in joining the Laboratory of Environmental Health and Ecotoxicology (LabEHE) as an MS thesis researcher. I completed my B.Sc. in Environmental Sciences with a GPA of 3.89 and have basic experience in FTIR spectroscopy.",
-    type: "student_application",
-    status: "new",
-    degree_level: "Master of Science (MS)",
-    university: "Jahangirnagar University",
-    research_interest: "Microplastic ingestion dynamics and histopathology in freshwater teleosts.",
-    cover_letter: "I am writing to express my strong interest in joining the Laboratory of Environmental Health and Ecotoxicology (LabEHE) as an MS thesis researcher. I completed my B.Sc. in Environmental Sciences with a GPA of 3.89 and have basic experience in FTIR spectroscopy.",
-    created_at: new Date(Date.now() - 86400000 * 2).toISOString(), // 2 days ago
-  },
-  {
-    id: "inq-3",
-    name: "Mahmudul Hasan",
-    email: "m.hasan.chem@du.ac.bd",
-    phone: "+880 1823-456789",
-    organization: "University of Dhaka",
-    subject: "Doctoral Research Fellowship Application",
-    category: "Student Admission / Thesis",
-    message: "Having published 2 Q1 papers on trace metal contamination, I wish to pursue my doctoral studies on speciation kinetics under Dr. Kabir's supervision.",
-    type: "student_application",
-    status: "reviewing",
-    degree_level: "Doctor of Philosophy (PhD)",
-    university: "University of Dhaka",
-    research_interest: "Speciation and biogeochemical mobility of heavy metals in contaminated wetland sediments.",
-    cover_letter: "Having published 2 Q1 papers on trace metal contamination, I wish to pursue my doctoral studies on speciation kinetics under Dr. Kabir's supervision.",
-    created_at: new Date(Date.now() - 86400000 * 5).toISOString(), // 5 days ago
-  },
-  {
-    id: "inq-4",
-    name: "Tariqul Rahman",
-    email: "t.rahman@bapa-bd.org",
-    phone: "+880 1911-223344",
-    organization: "Bangladesh Environmental Movement (BAPA)",
-    subject: "Industrial Effluent Toxicity Report & Policy Briefing",
-    category: "Environmental Analytical Services",
-    message: "We are preparing a policy memorandum for the Department of Environment on coastal effluent plumes and would like to request expert scientific consultation or analytical validation from your lab regarding toxic metal speciation.",
-    type: "contact_form",
-    status: "responded",
-    created_at: new Date(Date.now() - 86400000 * 7).toISOString(),
-  }
-];
+const LOCAL_STORAGE_KEY = "ecotox_lab_inbox_inquiries_v2";
 
 /**
- * Get all inbox inquiries (Supabase + localStorage fallback)
+ * Get all inbox inquiries (Supabase + local persistent storage)
+ * Pure backend / real data — ZERO mock fallbacks.
  */
 export async function getInquiries(): Promise<Inquiry[]> {
+  // 1. Try Supabase first
   try {
     const supabase = createClient();
     const { data, error } = await (supabase as any)
@@ -77,36 +17,41 @@ export async function getInquiries(): Promise<Inquiry[]> {
       .select("*")
       .order("created_at", { ascending: false });
 
-    if (!error && data && data.length > 0) {
+    if (!error && Array.isArray(data)) {
+      if (typeof window !== "undefined") {
+        safeLocalStorageSet(LOCAL_STORAGE_KEY, data);
+        idbSet(LOCAL_STORAGE_KEY, data).catch(() => {});
+      }
       return data;
     }
   } catch (err) {
-    // Supabase query error, fallback to local storage
+    // Supabase query error, fallback to local persistent storage
   }
 
-  // Check LocalStorage
+  // 2. Check IndexedDB
   if (typeof window !== "undefined") {
     try {
-      const cached = localStorage.getItem(LOCAL_STORAGE_KEY);
-      if (cached) {
-        const parsed = JSON.parse(cached);
-        if (Array.isArray(parsed) && parsed.length > 0) {
-          return parsed;
-        }
+      const idbData = await idbGet<Inquiry[]>(LOCAL_STORAGE_KEY);
+      if (Array.isArray(idbData)) {
+        return idbData;
+      }
+    } catch (e) {
+      console.warn("Failed to read inbox from IndexedDB:", e);
+    }
+
+    // 3. Check LocalStorage
+    try {
+      const cached = safeLocalStorageGet<Inquiry[]>(LOCAL_STORAGE_KEY);
+      if (Array.isArray(cached)) {
+        return cached;
       }
     } catch (e) {
       console.error("Failed to parse cached inbox inquiries:", e);
     }
   }
 
-  // Seed default
-  if (typeof window !== "undefined") {
-    try {
-      localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(INITIAL_INQUIRIES));
-    } catch {}
-  }
-
-  return INITIAL_INQUIRIES;
+  // 4. Return empty list if no inquiries exist — NEVER generate mock inquiries
+  return [];
 }
 
 /**
@@ -142,12 +87,13 @@ export async function submitInquiry(data: Partial<Inquiry>): Promise<Inquiry> {
     console.warn("Supabase inquiry insert failed, saved to local store:", err);
   }
 
-  // Save to LocalStorage
+  // Save to LocalStorage and IndexedDB
   if (typeof window !== "undefined") {
     try {
       const current = await getInquiries();
       const updated = [completeInquiry, ...current.filter((i) => i.id !== newId)];
-      localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(updated));
+      safeLocalStorageSet(LOCAL_STORAGE_KEY, updated);
+      await idbSet(LOCAL_STORAGE_KEY, updated);
       window.dispatchEvent(new CustomEvent("lab_inbox_updated", { detail: completeInquiry }));
     } catch (e) {
       console.error("Failed to save inquiry to localStorage:", e);
@@ -173,7 +119,8 @@ export async function updateInquiryStatus(id: string, status: InquiryStatus): Pr
     try {
       const current = await getInquiries();
       const updated = current.map((item) => (item.id === id ? { ...item, status } : item));
-      localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(updated));
+      safeLocalStorageSet(LOCAL_STORAGE_KEY, updated);
+      await idbSet(LOCAL_STORAGE_KEY, updated);
       window.dispatchEvent(new CustomEvent("lab_inbox_updated"));
     } catch (e) {
       console.error("Failed to update inquiry status locally:", e);
@@ -199,7 +146,8 @@ export async function deleteInquiry(id: string): Promise<boolean> {
     try {
       const current = await getInquiries();
       const updated = current.filter((item) => item.id !== id);
-      localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(updated));
+      safeLocalStorageSet(LOCAL_STORAGE_KEY, updated);
+      await idbSet(LOCAL_STORAGE_KEY, updated);
       window.dispatchEvent(new CustomEvent("lab_inbox_updated"));
     } catch (e) {
       console.error("Failed to delete inquiry locally:", e);
