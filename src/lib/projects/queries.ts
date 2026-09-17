@@ -33,8 +33,8 @@ function getQueryClient() {
 
 const STORAGE_KEY = "ecotox_lab_projects_v2";
 
-// In-memory / client-side cache state to seamlessly reflect Admin mutations in development & Realtime
-let memoryProjects: ProjectWithRelations[] = [...SEED_PROJECTS];
+// In-memory / client-side cache state — starts empty, populated from Supabase or local cache
+let memoryProjects: ProjectWithRelations[] = [];
 
 export function getLocalProjects(): ProjectWithRelations[] {
   if (typeof window === "undefined") return memoryProjects;
@@ -42,7 +42,7 @@ export function getLocalProjects(): ProjectWithRelations[] {
     const raw = localStorage.getItem(STORAGE_KEY) || localStorage.getItem("lab_projects_store");
     if (raw) {
       const parsed = JSON.parse(raw);
-      if (Array.isArray(parsed)) {
+      if (Array.isArray(parsed) && parsed.length > 0) {
         memoryProjects = parsed;
         return parsed;
       }
@@ -51,12 +51,6 @@ export function getLocalProjects(): ProjectWithRelations[] {
     // ignore
   }
 
-  // First time initialization with seed projects
-  memoryProjects = [...SEED_PROJECTS];
-  try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(memoryProjects));
-    localStorage.setItem("lab_projects_store", JSON.stringify(memoryProjects));
-  } catch {}
   return memoryProjects;
 }
 
@@ -89,11 +83,11 @@ export async function getResearchAreas(): Promise<ProjectResearchArea[]> {
       .order("display_order", { ascending: true });
 
     if (error || !data || data.length === 0) {
-      return SEED_RESEARCH_AREAS;
+      return [];
     }
     return data as ProjectResearchArea[];
   } catch {
-    return SEED_RESEARCH_AREAS;
+    return [];
   }
 }
 
@@ -422,10 +416,10 @@ export async function getProjectStats(): Promise<ProjectStats> {
     };
   } catch {
     return {
-      totalProjects: SEED_PROJECTS.filter((p) => p.is_published).length,
-      ongoingCount: SEED_PROJECTS.filter((p) => p.is_published && p.status === "ongoing").length,
-      completedCount: SEED_PROJECTS.filter((p) => p.is_published && p.status === "completed").length,
-      partnersCount: 12,
+      totalProjects: 0,
+      ongoingCount: 0,
+      completedCount: 0,
+      partnersCount: 0,
     };
   }
 }

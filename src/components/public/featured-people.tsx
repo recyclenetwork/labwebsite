@@ -31,7 +31,7 @@ interface FeaturedPeopleProps {
 }
 
 export function FeaturedPeople({ people: initialPeople }: FeaturedPeopleProps) {
-  const landingData = useLandingData();
+  const { data: landingData } = useLandingData();
   const scrollRef = React.useRef<HTMLDivElement>(null);
   const [researchers, setResearchers] = React.useState<TeamMember[]>([]);
   const [isPaused, setIsPaused] = React.useState(false);
@@ -50,7 +50,7 @@ export function FeaturedPeople({ people: initialPeople }: FeaturedPeopleProps) {
           return !isPI && !isAlumni;
         });
 
-        const shouldShuffle = landingData.peopleSection?.enableShuffle !== false;
+        const shouldShuffle = landingData?.peopleSection?.enableShuffle !== false;
         const finalRoster = shouldShuffle ? shuffleList(currentMembers) : currentMembers;
         setResearchers(finalRoster);
       } catch (err) {
@@ -58,13 +58,13 @@ export function FeaturedPeople({ people: initialPeople }: FeaturedPeopleProps) {
       }
     }
     load();
-  }, [landingData.peopleSection?.enableShuffle]);
+  }, [landingData?.peopleSection?.enableShuffle]);
 
   // Slideshow auto-advance interval (moving from left to right / advancing cards)
   React.useEffect(() => {
     if (isPaused || researchers.length === 0) return;
 
-    const intervalSeconds = landingData.peopleSection?.autoSlideSeconds || 3.5;
+    const intervalSeconds = landingData?.peopleSection?.autoSlideSeconds || 3.5;
     const timer = setInterval(() => {
       if (scrollRef.current) {
         const { scrollLeft, scrollWidth, clientWidth } = scrollRef.current;
@@ -80,7 +80,7 @@ export function FeaturedPeople({ people: initialPeople }: FeaturedPeopleProps) {
     }, intervalSeconds * 1000);
 
     return () => clearInterval(timer);
-  }, [isPaused, researchers.length, landingData.peopleSection?.autoSlideSeconds]);
+  }, [isPaused, researchers.length, landingData?.peopleSection?.autoSlideSeconds]);
 
   const scroll = (direction: "left" | "right") => {
     if (scrollRef.current) {
@@ -110,15 +110,15 @@ export function FeaturedPeople({ people: initialPeople }: FeaturedPeopleProps) {
           <div className="space-y-3 max-w-3xl text-left">
             <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-emerald-50 dark:bg-emerald-950/80 border border-emerald-200/80 dark:border-emerald-800/40 text-xs font-semibold uppercase tracking-wider text-emerald-800 dark:text-[#34D399] shadow-xs w-fit">
               <UserCheck className="w-3.5 h-3.5 text-[#10B981]" />
-              <span>{landingData.peopleSection?.badge || "LAB ROSTER"}</span>
+              <span>{landingData?.peopleSection?.badge || "LAB ROSTER"}</span>
             </div>
 
             <h2 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold tracking-tight text-slate-900 dark:text-white font-[family-name:var(--font-manrope)]">
-              {landingData.peopleSection?.title || "Meet the Researchers"}
+              {landingData?.peopleSection?.title || "Meet the Researchers"}
             </h2>
 
             <p className="text-sm sm:text-base text-slate-600 dark:text-slate-300 leading-relaxed font-normal font-[family-name:var(--font-inter)]">
-              {landingData.peopleSection?.subtitle ||
+              {landingData?.peopleSection?.subtitle ||
                 "The multidisciplinary faculty, doctoral scholars, graduate students, and fellows advancing environmental ecotoxicology research at Jahangirnagar University."}
             </p>
           </div>

@@ -11,7 +11,7 @@ import { useLandingData } from "@/lib/landing-store";
 import { useGalleryItems, getCategoryBadgeColor, GalleryItem } from "@/lib/gallery-store";
 
 export function ResearchGallery() {
-  const landingData = useLandingData();
+  const { data: landingData } = useLandingData();
   const { items: galleryItems } = useGalleryItems();
   const [selectedItem, setSelectedItem] = React.useState<GalleryItem | null>(null);
   const [isPaused, setIsPaused] = React.useState(false);
@@ -32,12 +32,12 @@ export function ResearchGallery() {
       {/* Section Header */}
       <div className="max-w-[1720px] mx-auto px-4 sm:px-6 lg:px-10 xl:px-12 text-center space-y-2.5 mb-10 sm:mb-12">
         <div className="inline-flex items-center gap-1.5 text-xs font-semibold uppercase tracking-widest text-[#10B981]">
-          <span>{landingData.gallerySection?.badge || "VISUAL ARCHIVE"}</span>
+          <span>{landingData?.gallerySection?.badge || "VISUAL ARCHIVE"}</span>
         </div>
         <h2 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold tracking-tight text-white font-[family-name:var(--font-manrope)]">
-          {landingData.gallerySection?.title || "Event Showcase & Field Gallery"}
+          {landingData?.gallerySection?.title || "Event Showcase & Field Gallery"}
         </h2>
-        {landingData.gallerySection?.subtitle && (
+        {landingData?.gallerySection?.subtitle && (
           <p className="text-xs sm:text-sm text-slate-400 max-w-xl mx-auto font-[family-name:var(--font-inter)]">
             {landingData.gallerySection.subtitle}
           </p>

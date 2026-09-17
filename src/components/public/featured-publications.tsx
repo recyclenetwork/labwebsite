@@ -6,10 +6,9 @@ import { ArrowRight, ExternalLink, ChevronLeft, ChevronRight, Star, BookOpen } f
 import { useLandingData } from "@/lib/landing-store";
 import { getPublishedPublications, getLocalPublications } from "@/lib/publications/queries";
 import { PublicationWithRelations } from "@/lib/publications/types";
-import { PublicationItem } from "@/data/mock-homepage";
 
 interface FeaturedPublicationsProps {
-  publications?: PublicationItem[];
+  publications?: Array<{ id: string; title: string; journal: string; year: number; doi: string; authors: string[]; type?: string; researchArea?: string }>;
 }
 
 interface DisplayPublication {
@@ -26,7 +25,7 @@ interface DisplayPublication {
 }
 
 export function FeaturedPublications({ publications: propPublications }: FeaturedPublicationsProps) {
-  const landingData = useLandingData();
+  const { data: landingData } = useLandingData();
   const scrollRef = React.useRef<HTMLDivElement>(null);
   const [items, setItems] = React.useState<DisplayPublication[]>([]);
   const [loading, setLoading] = React.useState(true);
@@ -84,8 +83,8 @@ export function FeaturedPublications({ publications: propPublications }: Feature
             id: p.id,
             title: p.title,
             year: p.year,
-            type: p.type,
-            researchArea: p.researchArea,
+            type: p.type || "journal_article",
+            researchArea: p.researchArea || "",
             authors: p.authors,
             journal: p.journal,
             doi: p.doi,
@@ -166,12 +165,12 @@ export function FeaturedPublications({ publications: propPublications }: Feature
           <div className="flex flex-col space-y-3 max-w-2xl text-left">
             <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-emerald-50 dark:bg-emerald-950/80 border border-emerald-200/80 dark:border-emerald-800/40 text-xs font-semibold uppercase tracking-wider text-emerald-800 dark:text-[#34D399] w-fit">
               <span className="w-1.5 h-1.5 rounded-full bg-[#10B981]" />
-              <span>{landingData.publicationsSection?.badge || "PEER-REVIEWED EVIDENCE"}</span>
+              <span>{landingData?.publicationsSection?.badge || "PEER-REVIEWED EVIDENCE"}</span>
             </div>
             <h2 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold tracking-tight text-slate-900 dark:text-white font-[family-name:var(--font-manrope)] leading-tight">
-              {landingData.publicationsSection?.title || "Featured Publications"}
+              {landingData?.publicationsSection?.title || "Featured Publications"}
             </h2>
-            {landingData.publicationsSection?.subtitle && (
+            {landingData?.publicationsSection?.subtitle && (
               <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-300 max-w-xl font-[family-name:var(--font-inter)]">
                 {landingData.publicationsSection.subtitle}
               </p>

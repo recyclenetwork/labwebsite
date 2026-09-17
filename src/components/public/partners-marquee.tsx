@@ -84,12 +84,12 @@ const PARTNERS: Partner[] = [
 import { useLandingData } from "@/lib/landing-store";
 
 export function PartnersMarquee() {
-  const landingData = useLandingData();
+  const { data: landingData } = useLandingData();
   const [isPaused, setIsPaused] = React.useState(false);
 
-  // Combine dynamic partners from landingData (or fallback to seed)
+  // Combine dynamic partners from landingData (or fallback to empty)
   const activePartners = React.useMemo(() => {
-    const custom = landingData.partnersSection?.partners;
+    const custom = landingData?.partnersSection?.partners;
     if (custom && custom.length > 0) {
       // Prioritize items that have a logo uploaded
       const withLogos = custom.filter((p) => Boolean(p.logoUrl && p.logoUrl.trim()));
@@ -97,7 +97,7 @@ export function PartnersMarquee() {
       return custom;
     }
     return PARTNERS;
-  }, [landingData.partnersSection?.partners]);
+  }, [landingData?.partnersSection?.partners]);
 
   // Triple duplicate for seamless infinite ribbon
   const marqueePartners = React.useMemo(() => {
@@ -113,10 +113,10 @@ export function PartnersMarquee() {
       <div className="max-w-[1720px] mx-auto px-4 sm:px-6 lg:px-10 xl:px-12 text-center space-y-2 mb-8">
         <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#E8F5EE] dark:bg-emerald-950/80 border border-emerald-900/10 dark:border-emerald-800/40 text-[11px] font-bold uppercase tracking-wider text-[#047857] dark:text-[#34D399]">
           <span className="w-1.5 h-1.5 rounded-full bg-[#10B981]" />
-          <span>{landingData.partnersSection?.badge || "COLLABORATING INSTITUTIONS & RESEARCH SPONSORS"}</span>
+          <span>{landingData?.partnersSection?.badge || "COLLABORATING INSTITUTIONS & RESEARCH SPONSORS"}</span>
         </div>
         <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 font-medium">
-          {landingData.partnersSection?.title ||
+          {landingData?.partnersSection?.title ||
             "Partnering with leading ministries, academic councils, and international environmental organizations"}
         </p>
       </div>

@@ -6,8 +6,8 @@ import { ArrowRight, GraduationCap, Send } from "lucide-react";
 import { useLandingData } from "@/lib/landing-store";
 
 export function OpportunitiesCTA() {
-  const landingData = useLandingData();
-  const opp = landingData.opportunitiesSection;
+  const { data: landingData } = useLandingData();
+  const opp = landingData?.opportunitiesSection;
 
   return (
     <section className="py-16 sm:py-20 lg:py-24 bg-white dark:bg-[#090D16] transition-colors duration-300 relative overflow-hidden">

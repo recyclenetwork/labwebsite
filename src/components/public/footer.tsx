@@ -7,7 +7,7 @@ import { SITE_CONFIG } from "@/constants";
 import { useLandingData } from "@/lib/landing-store";
 
 export function Footer() {
-  const landingData = useLandingData();
+  const { data: landingData } = useLandingData();
 
   return (
     <footer className="bg-[#060A11] text-white pt-16 lg:pt-24 pb-12 border-t border-slate-800 relative overflow-hidden">
@@ -27,7 +27,7 @@ export function Footer() {
               </div>
               <div className="flex flex-col">
                 <span className="font-bold text-[15px] sm:text-base tracking-tight text-white leading-tight">
-                  {landingData.footer?.labName || "Laboratory of Environmental Health and Ecotoxicology (LabEHE)"}
+                  {landingData?.footer?.labName || "Laboratory of Environmental Health and Ecotoxicology (LabEHE)"}
                 </span>
                 <span className="text-xs text-[#34D399] font-semibold mt-0.5">
                   Department of Environmental Sciences
@@ -36,13 +36,13 @@ export function Footer() {
             </Link>
 
             <p className="text-sm text-slate-300 leading-relaxed max-w-sm pt-2">
-              {landingData.footer?.description ||
+              {landingData?.footer?.description ||
                 "Rigorous empirical science for healthier environments. Investigating contaminant pathways, exposure kinetics, biological resilience, and circular ecosystem solutions."}
             </p>
 
             <div className="pt-2 flex items-center gap-2 text-xs text-emerald-300/80 font-medium">
               <MapPin className="w-3.5 h-3.5 text-[#10B981] flex-shrink-0" />
-              <span>{landingData.contactSection?.address || SITE_CONFIG.location}</span>
+              <span>{landingData?.contactSection?.address || SITE_CONFIG.location}</span>
             </div>
           </div>
 
@@ -155,8 +155,8 @@ export function Footer() {
         {/* Bottom Bar: Copyright & Institutional Governance */}
         <div className="pt-8 border-t border-slate-800 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-slate-400">
           <div>
-            {landingData.footer?.copyrightText ||
-              `© ${new Date().getFullYear()} ${landingData.footer?.labName || SITE_CONFIG.name}. All rights reserved.`}
+            {landingData?.footer?.copyrightText ||
+              `© ${new Date().getFullYear()} ${landingData?.footer?.labName || SITE_CONFIG.name}. All rights reserved.`}
           </div>
 
           <div className="flex items-center gap-6">

@@ -30,8 +30,8 @@ import {
 } from "lucide-react";
 
 export default function AboutPage() {
-  const landingData = useLandingData();
-  const about = landingData.aboutPage;
+  const { data: landingData } = useLandingData();
+  const about = landingData?.aboutPage;
   const { items: galleryItems } = useGalleryItems();
 
   const timelineYears = about?.milestones && about.milestones.length > 0 ? about.milestones : [

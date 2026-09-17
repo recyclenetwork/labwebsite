@@ -12,7 +12,7 @@ export function getCachedTeamMembers(): TeamMember[] {
       return cached;
     }
   }
-  return INITIAL_TEAM_MEMBERS;
+  return [];
 }
 
 export function getCachedPI(): TeamMember | null {
@@ -103,12 +103,8 @@ export async function getTeamMembers(): Promise<TeamMember[]> {
     }
   }
 
-  // 4. Fallback to rich seed data
-  if (typeof window !== "undefined") {
-    await idbSet(LOCAL_STORAGE_KEY, INITIAL_TEAM_MEMBERS);
-    safeLocalStorageSet(LOCAL_STORAGE_KEY, INITIAL_TEAM_MEMBERS);
-  }
-  return INITIAL_TEAM_MEMBERS;
+  // 4. Return empty array — no hardcoded seed data fallback
+  return [];
 }
 
 export async function saveTeamMember(member: Partial<TeamMember>): Promise<TeamMember> {
@@ -302,14 +298,7 @@ export async function getTeamMemberBySlug(slug: string): Promise<TeamMember | nu
   );
   if (found) return found;
 
-  // Check initial seed data fallback
-  const seedFound = INITIAL_TEAM_MEMBERS.find(
-    (m) =>
-      m.slug === slug ||
-      m.id === slug ||
-      m.name.toLowerCase().replace(/[^a-z0-9]+/g, "-") === slug
-  );
-  return seedFound || null;
+  return null;
 }
 
 export async function getRelatedTeamMembers(

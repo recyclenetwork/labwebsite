@@ -638,8 +638,8 @@ export function sanitizeLandingData(data: LandingContentData): LandingContentDat
 
 const STORAGE_KEY = "ecotox_landing_content_v2";
 
-export function getStoredLandingData(): LandingContentData {
-  if (typeof window === "undefined") return DEFAULT_LANDING_DATA;
+export function getStoredLandingData(): LandingContentData | null {
+  if (typeof window === "undefined") return null;
   try {
     const raw = safeLocalStorageGet<LandingContentData>(STORAGE_KEY);
     if (raw) {
@@ -649,10 +649,10 @@ export function getStoredLandingData(): LandingContentData {
   } catch (e) {
     console.warn("Could not read landing content:", e);
   }
-  return DEFAULT_LANDING_DATA;
+  return null;
 }
 
-export async function fetchLandingDataAsync(): Promise<LandingContentData> {
+export async function fetchLandingDataAsync(): Promise<LandingContentData | null> {
   // 1. First attempt to fetch live from Supabase site_settings
   try {
     const supabase = createClient();
@@ -668,12 +668,12 @@ export async function fetchLandingDataAsync(): Promise<LandingContentData> {
       // Update local storage cache
       if (typeof window !== "undefined") {
         safeLocalStorageSet(STORAGE_KEY, remoteData);
-        idbSet(STORAGE_KEY, remoteData).catch(() => {});
+        idbSet(STORAGE_KEY, remoteData).catch(() => { });
       }
       return remoteData;
     }
   } catch (err) {
-    // Supabase error or offline - fallback to local storage
+    // Supabase error or offline - fallback to local cache
   }
 
   // 2. Check IndexedDB
@@ -683,10 +683,10 @@ export async function fetchLandingDataAsync(): Promise<LandingContentData> {
       if (idbData) {
         return sanitizeLandingData(deepMerge(DEFAULT_LANDING_DATA, idbData));
       }
-    } catch {}
+    } catch { }
   }
 
-  // 3. Fallback to localStorage / default
+  // 3. Fallback to localStorage only (no hardcoded defaults)
   return getStoredLandingData();
 }
 
@@ -737,9 +737,9 @@ export function saveLandingData(data: LandingContentData): boolean {
           value: sanitized,
           updated_at: new Date().toISOString(),
         })
-        .then(() => {})
+        .then(() => { })
         .catch((err: any) => console.warn("Background Supabase save warning:", err));
-    } catch {}
+    } catch { }
 
     window.dispatchEvent(new Event("landing-content-updated"));
     return true;
@@ -749,49 +749,56 @@ export function saveLandingData(data: LandingContentData): boolean {
   }
 }
 
-export function resetLandingData(): LandingContentData {
+export function resetLandingData(): null {
   if (typeof window !== "undefined") {
-    idbDelete(STORAGE_KEY).catch(() => {});
+    idbDelete(STORAGE_KEY).catch(() => { });
     try {
       localStorage.removeItem(STORAGE_KEY);
-    } catch {}
+    } catch { }
 
     try {
       const supabase = createClient();
       (supabase as any)
         .from("site_settings")
-        .upsert({
-          key: "landing_content",
-          value: DEFAULT_LANDING_DATA,
-          updated_at: new Date().toISOString(),
-        })
-        .then(() => {})
-        .catch(() => {});
-    } catch {}
+        .delete()
+        .eq("key", "landing_content")
+        .then(() => { })
+        .catch(() => { });
+    } catch { }
 
     window.dispatchEvent(new Event("landing-content-updated"));
   }
-  return DEFAULT_LANDING_DATA;
+  return null;
 }
 
 export function useLandingData() {
-  const [data, setData] = useState<LandingContentData>(DEFAULT_LANDING_DATA);
+  const [data, setData] = useState<LandingContentData>({} as LandingContentData);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     // 1. Synchronously load from localStorage cache for instant render
     const initial = getStoredLandingData();
-    setData(initial);
+    if (initial) {
+      setData(initial);
+      setLoading(false);
+    }
 
     // 2. Asynchronously fetch from Supabase (or IndexedDB)
     fetchLandingDataAsync().then((latest) => {
-      setData(latest);
-    }).catch(() => {});
+      if (latest) {
+        setData(latest);
+      }
+      setLoading(false);
+    }).catch(() => {
+      setLoading(false);
+    });
 
     const handleUpdate = () => {
-      setData(getStoredLandingData());
+      const cached = getStoredLandingData();
+      if (cached) setData(cached);
       fetchLandingDataAsync().then((latest) => {
-        setData(latest);
-      }).catch(() => {});
+        if (latest) setData(latest);
+      }).catch(() => { });
     };
 
     window.addEventListener("landing-content-updated", handleUpdate);
@@ -803,6 +810,6 @@ export function useLandingData() {
     };
   }, []);
 
-  return data;
+  return { data, loading };
 }
 

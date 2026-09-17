@@ -10,15 +10,15 @@ const LOCAL_STORAGE_KEY = "lab_news_articles_override_v2";
  * Get local in-browser news override storage
  */
 export function getLocalNews(): NewsArticle[] {
-  if (typeof window === "undefined") return SEED_NEWS_ARTICLES;
+  if (typeof window === "undefined") return [];
   try {
     const cached = safeLocalStorageGet<NewsArticle[]>(LOCAL_STORAGE_KEY);
     if (cached && Array.isArray(cached) && cached.length > 0) {
       return cached;
     }
-    return SEED_NEWS_ARTICLES;
+    return [];
   } catch {
-    return SEED_NEWS_ARTICLES;
+    return [];
   }
 }
 
@@ -40,7 +40,7 @@ export async function getPublishedNews(
   filters: NewsFilterParams = {},
   includeDrafts = false
 ): Promise<NewsArticle[]> {
-  let localList: NewsArticle[] = SEED_NEWS_ARTICLES;
+  let localList: NewsArticle[] = [];
 
   if (typeof window !== "undefined") {
     try {
@@ -52,10 +52,6 @@ export async function getPublishedNews(
         if (Array.isArray(lsData) && lsData.length > 0) {
           localList = lsData;
           idbSet(LOCAL_STORAGE_KEY, lsData);
-        } else {
-          localList = SEED_NEWS_ARTICLES;
-          idbSet(LOCAL_STORAGE_KEY, SEED_NEWS_ARTICLES);
-          safeLocalStorageSet(LOCAL_STORAGE_KEY, SEED_NEWS_ARTICLES);
         }
       }
     } catch {

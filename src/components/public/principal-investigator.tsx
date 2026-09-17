@@ -20,7 +20,7 @@ import { TeamMember } from "@/lib/team/types";
 
 export function PrincipalInvestigator() {
   const [mounted, setMounted] = React.useState(false);
-  const landingData = useLandingData();
+  const { data: landingData } = useLandingData();
   const [teamPI, setTeamPI] = React.useState<TeamMember | null>(null);
 
   React.useEffect(() => {
@@ -67,23 +67,23 @@ export function PrincipalInvestigator() {
   };
 
   // Use team database PI data, falling back to landing store customizations
-  const piName = teamPI?.name || landingData.piSection?.name || "Dr. Mohammad S. Kabir";
-  const piRole = teamPI?.role || landingData.piSection?.designation || "Professor & Principal Investigator";
-  const piDepartment = teamPI?.department || landingData.piSection?.department || "Department of Environmental Sciences";
-  const piAffiliation = teamPI?.affiliation || landingData.piSection?.institution || "Jahangirnagar University";
+  const piName = teamPI?.name || landingData?.piSection?.name || "Dr. Mohammad S. Kabir";
+  const piRole = teamPI?.role || landingData?.piSection?.designation || "Professor & Principal Investigator";
+  const piDepartment = teamPI?.department || landingData?.piSection?.department || "Department of Environmental Sciences";
+  const piAffiliation = teamPI?.affiliation || landingData?.piSection?.institution || "Jahangirnagar University";
   
   const piImage =
     cleanImage(teamPI?.imageSrc) ||
-    cleanImage(landingData.piSection?.imageSrc) ||
+    cleanImage(landingData?.piSection?.imageSrc) ||
     cleanImage(getCachedPI()?.imageSrc) ||
     "";
 
-  const piQuote = teamPI?.quote || teamPI?.bio || landingData.piSection?.bioQuote || "Our mission is to unravel the intricate mechanisms of environmental contaminants and translate rigorous experimental toxicology into actionable ecological conservation and community health protection.";
+  const piQuote = teamPI?.quote || teamPI?.bio || landingData?.piSection?.bioQuote || "Our mission is to unravel the intricate mechanisms of environmental contaminants and translate rigorous experimental toxicology into actionable ecological conservation and community health protection.";
   
-  const publicationsText = teamPI?.publicationsCount ? `${teamPI.publicationsCount}+` : landingData.piSection?.publicationsCount || "74+";
+  const publicationsText = teamPI?.publicationsCount ? `${teamPI.publicationsCount}+` : landingData?.piSection?.publicationsCount || "74+";
   const citationsText = teamPI?.citationsCount ? `${teamPI.citationsCount.toLocaleString()}+` : "2,840+";
   const hIndexText = teamPI?.hIndex ? `${teamPI.hIndex}` : "26";
-  const scholarUrl = teamPI?.googleScholarUrl || landingData.piSection?.scholarUrl;
+  const scholarUrl = teamPI?.googleScholarUrl || landingData?.piSection?.scholarUrl;
   const emailAddress = teamPI?.email || "msk@juniv.edu";
 
   // Dynamic research highlights from PI's research interests

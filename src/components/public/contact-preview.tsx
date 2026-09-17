@@ -18,7 +18,7 @@ import { SITE_CONFIG } from "@/constants";
 import { useLandingData } from "@/lib/landing-store";
 
 export function ContactPreview() {
-  const landingData = useLandingData();
+  const { data: landingData } = useLandingData();
   const [viewMode, setViewMode] = React.useState<"aerial" | "map">("aerial");
 
   return (
@@ -32,15 +32,15 @@ export function ContactPreview() {
           <div className="lg:col-span-5 space-y-6 text-left">
             <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-emerald-50 dark:bg-emerald-950/80 border border-emerald-200/80 dark:border-emerald-800/40 text-xs font-semibold uppercase tracking-wider text-emerald-800 dark:text-[#34D399] shadow-xs">
               <Send className="w-3.5 h-3.5 text-[#10B981]" />
-              <span>{landingData.contactSection?.badge || "Campus Location & Inquiries"}</span>
+              <span>{landingData?.contactSection?.badge || "Campus Location & Inquiries"}</span>
             </div>
 
             <div className="space-y-2.5">
               <h2 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold tracking-tight text-slate-900 dark:text-white font-[family-name:var(--font-manrope)] leading-tight">
-                {landingData.contactSection?.title || "Reach our research team."}
+                {landingData?.contactSection?.title || "Reach our research team."}
               </h2>
               <p className="text-sm sm:text-base text-slate-600 dark:text-slate-300 leading-relaxed font-normal font-[family-name:var(--font-inter)]">
-                {landingData.contactSection?.subtitle ||
+                {landingData?.contactSection?.subtitle ||
                   "Located at Jahangirnagar University campus in Savar, Dhaka. Whether inquiring about collaborative grant proposals, sample submission protocols, postdoctoral opportunities, or graduate admissions, our scientific team is ready to connect."}
               </p>
             </div>
@@ -53,10 +53,10 @@ export function ContactPreview() {
                   <span>Facility Location</span>
                 </div>
                 <p className="text-xs sm:text-sm font-semibold text-slate-900 dark:text-white font-[family-name:var(--font-inter)]">
-                  {landingData.contactSection?.facilityName || "Laboratory of Environmental Health and Ecotoxicology (LabEHE)"}
+                  {landingData?.contactSection?.facilityName || "Laboratory of Environmental Health and Ecotoxicology (LabEHE)"}
                 </p>
                 <p className="text-xs text-slate-500 dark:text-slate-400">
-                  {landingData.contactSection?.address || "Jahangirnagar University, Savar"}
+                  {landingData?.contactSection?.address || "Jahangirnagar University, Savar"}
                 </p>
               </div>
 
@@ -66,13 +66,13 @@ export function ContactPreview() {
                   <span>Direct Correspondence</span>
                 </div>
                 <a
-                  href={`mailto:${landingData.contactSection?.email || SITE_CONFIG.email}`}
+                  href={`mailto:${landingData?.contactSection?.email || SITE_CONFIG.email}`}
                   className="text-xs sm:text-sm font-semibold text-[#14532D] dark:text-[#34D399] hover:underline block truncate font-[family-name:var(--font-inter)]"
                 >
-                  {landingData.contactSection?.email || SITE_CONFIG.email}
+                  {landingData?.contactSection?.email || SITE_CONFIG.email}
                 </a>
                 <p className="text-xs text-slate-500 dark:text-slate-400">
-                  {landingData.contactSection?.phone || "Response within 24 business hours"}
+                  {landingData?.contactSection?.phone || "Response within 24 business hours"}
                 </p>
               </div>
             </div>
@@ -104,7 +104,7 @@ export function ContactPreview() {
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 relative z-10">
               <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 border border-white/20 backdrop-blur-md text-xs font-semibold uppercase text-emerald-200">
                 <Navigation className="w-3.5 h-3.5 text-[#34D399]" />
-                <span>{landingData.contactSection?.facilityName || "Laboratory of Environmental Health and Ecotoxicology (LabEHE)"}</span>
+                <span>{landingData?.contactSection?.facilityName || "Laboratory of Environmental Health and Ecotoxicology (LabEHE)"}</span>
               </div>
 
               <div className="flex items-center p-1 rounded-xl bg-black/40 border border-white/10 backdrop-blur-md">
@@ -139,7 +139,7 @@ export function ContactPreview() {
               {viewMode === "aerial" ? (
                 <>
                   <img
-                    src={landingData.contactSection?.aerialImageSrc || "/images/jahangirnagar-campus.jpg"}
+                    src={landingData?.contactSection?.aerialImageSrc || "/images/jahangirnagar-campus.jpg"}
                     alt="Jahangirnagar University Campus aerial view"
                     onError={(e) => {
                       const target = e.currentTarget;
@@ -154,7 +154,7 @@ export function ContactPreview() {
                   <div className="absolute top-1/3 left-1/3 -translate-x-1/2 -translate-y-1/2 flex items-center gap-2 px-3 py-1.5 rounded-full bg-black/80 backdrop-blur-md border border-emerald-400 text-white shadow-xl animate-bounce">
                     <span className="w-2.5 h-2.5 rounded-full bg-[#10B981] animate-ping" />
                     <span className="text-[11px] font-bold text-white tracking-wide">
-                      {landingData.contactSection?.facilityName || "Laboratory of Environmental Health and Ecotoxicology (LabEHE)"}
+                      {landingData?.contactSection?.facilityName || "Laboratory of Environmental Health and Ecotoxicology (LabEHE)"}
                     </span>
                   </div>
 
@@ -162,18 +162,18 @@ export function ContactPreview() {
                     <div className="flex items-center gap-2">
                       <MapPin className="w-4 h-4 text-[#34D399]" />
                       <span className="font-semibold text-white truncate max-w-[280px]">
-                        {landingData.contactSection?.address || "Savar, Dhaka-1342, Bangladesh"}
+                        {landingData?.contactSection?.address || "Savar, Dhaka-1342, Bangladesh"}
                       </span>
                     </div>
                     <span className="text-[11px] font-mono text-emerald-300 hidden sm:inline-block">
-                      {landingData.contactSection?.gpsCoordinates || "23.8824° N, 90.2671° E"}
+                      {landingData?.contactSection?.gpsCoordinates || "23.8824° N, 90.2671° E"}
                     </span>
                   </div>
                 </>
               ) : (
                 <iframe
                   title="Jahangirnagar University Google Map"
-                  src={landingData.contactSection?.mapEmbedUrl || "https://maps.google.com/maps?q=Department+of+Environmental+Sciences,+Jahangirnagar+University,+Savar,+Dhaka,+Bangladesh&t=&z=16&ie=UTF8&iwloc=&output=embed"}
+                  src={landingData?.contactSection?.mapEmbedUrl || "https://maps.google.com/maps?q=Department+of+Environmental+Sciences,+Jahangirnagar+University,+Savar,+Dhaka,+Bangladesh&t=&z=16&ie=UTF8&iwloc=&output=embed"}
                   className="w-full h-full border-0"
                   loading="lazy"
                   referrerPolicy="no-referrer-when-downgrade"

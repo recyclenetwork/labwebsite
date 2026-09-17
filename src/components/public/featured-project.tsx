@@ -37,7 +37,7 @@ interface DisplayProject {
 }
 
 export function FeaturedProject() {
-  const landingData = useLandingData();
+  const { data: landingData } = useLandingData();
   const [projects, setProjects] = React.useState<DisplayProject[]>([]);
   const [loading, setLoading] = React.useState(true);
   const [currentIndex, setCurrentIndex] = React.useState(0);
@@ -194,15 +194,15 @@ export function FeaturedProject() {
           <div className="space-y-2 text-left max-w-3xl">
             <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-emerald-50 dark:bg-emerald-950/70 border border-emerald-200/80 dark:border-emerald-800/50 text-emerald-800 dark:text-[#34D399] text-xs font-semibold tracking-wider uppercase shadow-xs">
               <span className="w-1.5 h-1.5 rounded-full bg-[#10B981] animate-pulse" />
-              <span>{landingData.projectsSection?.badge || "FLAGSHIP RESEARCH"}</span>
+              <span>{landingData?.projectsSection?.badge || "FLAGSHIP RESEARCH"}</span>
             </div>
 
             <h2 className="text-2xl sm:text-3xl lg:text-4xl 2xl:text-[42px] font-extrabold text-slate-900 dark:text-white tracking-tight leading-snug font-[family-name:var(--font-manrope)]">
-              {landingData.projectsSection?.title || "Research Projects & Scientific Breakthroughs"}
+              {landingData?.projectsSection?.title || "Research Projects & Scientific Breakthroughs"}
             </h2>
 
             <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-300 leading-relaxed font-normal pt-1 max-w-2xl font-[family-name:var(--font-inter)]">
-              {landingData.projectsSection?.subtitle ||
+              {landingData?.projectsSection?.subtitle ||
                 "High-impact investigative projects funded by national and international scientific bodies."}
             </p>
           </div>

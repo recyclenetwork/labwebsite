@@ -88,7 +88,7 @@ export default function AdminLandingManagerPage() {
   useEffect(() => {
     pruneOversizedLocalStorage();
     const initial = getStoredLandingData();
-    setFormData(initial);
+    if (initial) setFormData(initial);
 
     idbGet<LandingContentData>("ecotox_landing_content_v2")
       .then((idbData) => {
@@ -136,8 +136,8 @@ export default function AdminLandingManagerPage() {
 
   const handleReset = () => {
     if (confirm("Reset landing page content to original laboratory defaults?")) {
-      const reset = resetLandingData();
-      setFormData(reset);
+      resetLandingData();
+      setFormData(DEFAULT_LANDING_DATA);
       setSavedStatus("Reverted to original lab defaults.");
       setTimeout(() => setSavedStatus(null), 4000);
     }

@@ -14,16 +14,16 @@ const LOCAL_STORAGE_KEY = "lab_publications_override_v2";
  * Get local in-browser publication override storage (for local dev resilience)
  */
 export function getLocalPublications(): PublicationWithRelations[] {
-  if (typeof window === "undefined") return SEED_PUBLICATIONS;
+  if (typeof window === "undefined") return [];
   try {
     const raw = localStorage.getItem(LOCAL_STORAGE_KEY);
     if (!raw) {
-      localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(SEED_PUBLICATIONS));
-      return SEED_PUBLICATIONS;
+      return [];
     }
-    return JSON.parse(raw);
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed : [];
   } catch {
-    return SEED_PUBLICATIONS;
+    return [];
   }
 }
 

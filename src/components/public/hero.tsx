@@ -11,8 +11,19 @@ import {
   Heart,
   ChevronDown,
 } from "lucide-react";
-import type { HeroData } from "@/data/mock-homepage";
 import { useLandingData } from "@/lib/landing-store";
+
+interface HeroData {
+  eyebrow?: string;
+  headline?: string;
+  supportingText?: string;
+  primaryCtaLabel?: string;
+  primaryCtaHref?: string;
+  secondaryCtaLabel?: string;
+  secondaryCtaHref?: string;
+  imageSrc?: string;
+  imageAlt?: string;
+}
 
 interface HeroProps {
   data?: HeroData;
@@ -139,14 +150,14 @@ const ARC_NODES = [
 ];
 
 export function Hero({ data }: HeroProps) {
-  const landingData = useLandingData();
+  const { data: landingData } = useLandingData();
   const currentStages =
-    landingData.hero?.stages && landingData.hero.stages.length > 0
+    landingData?.hero?.stages && landingData.hero.stages.length > 0
       ? landingData.hero.stages
       : WORKFLOW_STAGES;
 
   const currentArcNodes =
-    landingData.hero?.arcNodes && landingData.hero.arcNodes.length > 0
+    landingData?.hero?.arcNodes && landingData.hero.arcNodes.length > 0
       ? landingData.hero.arcNodes.map((n, idx) => ({
           id: n.id,
           label: n.label,
@@ -161,7 +172,7 @@ export function Hero({ data }: HeroProps) {
   const [hoveredNodeId, setHoveredNodeId] = React.useState<string | null>(null);
   const [progress, setProgress] = React.useState(0);
 
-  const durationSec = landingData.hero?.slideDurationSeconds || 4;
+  const durationSec = landingData?.hero?.slideDurationSeconds || 4;
   const slideDurationMs = durationSec * 1000;
 
   // Auto-advancing Slideshow Timer with smooth deterministic Ping-Pong Progression (1 → 2 → 3 → 4 → 3 → 2 → 1)
@@ -289,18 +300,18 @@ export function Hero({ data }: HeroProps) {
             {/* Dual Action Buttons (Side by Side or Stacked on narrow mobile) */}
             <div className="grid grid-cols-1 xs:grid-cols-2 sm:flex sm:flex-row sm:items-center gap-2.5 sm:gap-4 pt-1 max-w-md sm:max-w-none">
               <Link
-                href={landingData.hero.primaryCtaHref || "/research"}
+                href={landingData?.hero?.primaryCtaHref || "/research"}
                 className="group inline-flex items-center justify-center gap-2 px-5 py-3 rounded-full border border-white/35 bg-black/40 hover:bg-white/20 backdrop-blur-md text-white text-xs sm:text-[13px] font-mono-scientific uppercase tracking-wider font-bold transition-all shadow-lg hover:border-[#34D399] hover:shadow-[0_0_20px_rgba(52,211,153,0.3)] active:scale-95 text-center"
               >
-                <span>{landingData.hero.primaryCtaLabel || "EXPLORE RESEARCH"}</span>
+                <span>{landingData?.hero?.primaryCtaLabel || "EXPLORE RESEARCH"}</span>
                 <ArrowRight className="w-3.5 h-3.5 text-[#34D399] group-hover:translate-x-0.5 transition-transform shrink-0" />
               </Link>
 
               <Link
-                href={landingData.hero.secondaryCtaHref || "/people"}
+                href={landingData?.hero?.secondaryCtaHref || "/people"}
                 className="group inline-flex items-center justify-center gap-2 px-5 py-3 rounded-full bg-[#10B981] hover:bg-[#34D399] text-[#04150C] text-xs sm:text-[13px] font-mono-scientific uppercase tracking-wider font-extrabold transition-all shadow-lg shadow-emerald-500/25 hover:shadow-emerald-500/40 active:scale-95 text-center"
               >
-                <span>{landingData.hero.secondaryCtaLabel || "MEET OUR LAB"}</span>
+                <span>{landingData?.hero?.secondaryCtaLabel || "MEET OUR LAB"}</span>
                 <ArrowRight className="w-3.5 h-3.5 stroke-[3] group-hover:translate-x-0.5 transition-transform shrink-0" />
               </Link>
             </div>

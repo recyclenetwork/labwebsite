@@ -21,24 +21,16 @@ export function generateAreaSlug(title: string): string {
  */
 export function getAllResearchAreas(): ProjectResearchArea[] {
   if (typeof window === "undefined") {
-    return SEED_RESEARCH_AREAS;
+    return [];
   }
 
   try {
     const raw = localStorage.getItem(LOCAL_STORAGE_KEY);
-    if (!raw) return SEED_RESEARCH_AREAS;
+    if (!raw) return [];
     const customList: ProjectResearchArea[] = JSON.parse(raw);
-    const existingIds = new Set(SEED_RESEARCH_AREAS.map((a) => a.id));
-    const merged = [...SEED_RESEARCH_AREAS];
-    for (const item of customList) {
-      if (!existingIds.has(item.id)) {
-        merged.push(item);
-        existingIds.add(item.id);
-      }
-    }
-    return merged;
+    return Array.isArray(customList) ? customList : [];
   } catch {
-    return SEED_RESEARCH_AREAS;
+    return [];
   }
 }
 

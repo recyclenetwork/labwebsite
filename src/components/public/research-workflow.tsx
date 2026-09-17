@@ -1,6 +1,13 @@
 import * as React from "react";
 import { ArrowRight, Compass, FlaskConical, LineChart, Dna, ShieldCheck } from "lucide-react";
-import type { WorkflowStep } from "@/data/mock-homepage";
+
+interface WorkflowStep {
+  step: string;
+  phase: string;
+  title: string;
+  description: string;
+  technologies: string[];
+}
 
 interface ResearchWorkflowProps {
   steps: WorkflowStep[];

@@ -151,7 +151,7 @@ interface ResearchAreasProps {
 }
 
 export function ResearchAreas({ areas }: ResearchAreasProps = {}) {
-  const landingData = useLandingData();
+  const { data: landingData } = useLandingData();
   const [viewMode, setViewMode] = React.useState<"deck" | "radial" | "grid">("deck");
   const [domains, setDomains] = React.useState<StudyDomain[]>(STUDY_DOMAINS);
   const [activeCard, setActiveCard] = React.useState<StudyDomain>(STUDY_DOMAINS[0]);
@@ -170,13 +170,13 @@ export function ResearchAreas({ areas }: ResearchAreasProps = {}) {
 
   // Randomize View Mode & Cards on client load based on admin settings
   React.useEffect(() => {
-    const shouldShuffleMode = landingData.researchFocus?.shuffleViewMode !== false;
+    const shouldShuffleMode = landingData?.researchFocus?.shuffleViewMode !== false;
     const viewModes: Array<"deck" | "radial" | "grid"> = ["deck", "radial", "grid"];
 
     if (shouldShuffleMode) {
       const randomMode = viewModes[Math.floor(Math.random() * viewModes.length)];
       setViewMode(randomMode);
-    } else if (landingData.researchFocus?.defaultViewMode) {
+    } else if (landingData?.researchFocus?.defaultViewMode) {
       setViewMode(landingData.researchFocus.defaultViewMode);
     }
 
@@ -184,8 +184,8 @@ export function ResearchAreas({ areas }: ResearchAreasProps = {}) {
     setDomains(shuffled);
     setActiveCard(shuffled[0]);
   }, [
-    landingData.researchFocus?.shuffleViewMode,
-    landingData.researchFocus?.defaultViewMode,
+    landingData?.researchFocus?.shuffleViewMode,
+    landingData?.researchFocus?.defaultViewMode,
     shuffleArray,
   ]);
 
@@ -193,39 +193,38 @@ export function ResearchAreas({ areas }: ResearchAreasProps = {}) {
   const handleShuffle = () => {
     setIsShuffling(true);
     const viewModes: Array<"deck" | "radial" | "grid"> = ["deck", "radial", "grid"];
-    const otherModes = viewModes.filter((m) => m !== viewMode);
-    const nextRandomMode = otherModes[Math.floor(Math.random() * otherModes.length)];
-    setViewMode(nextRandomMode);
+    const randomMode = viewModes[Math.floor(Math.random() * viewModes.length)];
+    setViewMode(randomMode);
 
-    const shuffled = shuffleArray(domains);
+    const shuffled = shuffleArray(STUDY_DOMAINS);
     setDomains(shuffled);
     setActiveCard(shuffled[0]);
-    setTimeout(() => setIsShuffling(false), 600);
+
+    setTimeout(() => {
+      setIsShuffling(false);
+    }, 400);
   };
 
   return (
-    <section className="w-full py-16 sm:py-24 bg-[#F8FAF9] dark:bg-[#090D16] transition-colors duration-300 relative overflow-hidden">
-      {/* Background Subtle Ambience */}
-      <div className="absolute top-1/4 -left-32 w-96 h-96 rounded-full bg-[#10B981]/5 blur-3xl pointer-events-none" />
-      <div className="absolute bottom-1/4 -right-32 w-96 h-96 rounded-full bg-teal-500/5 blur-3xl pointer-events-none" />
+    <section className="py-20 lg:py-28 bg-gradient-to-b from-[#F0FDF4]/60 via-[#F8FAF9] to-white dark:from-[#08130B] dark:via-[#090D16] dark:to-[#0B1120] text-slate-900 dark:text-white relative overflow-hidden transition-colors duration-300">
+      {/* Background ambient lighting */}
+      <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-[1000px] h-[500px] bg-emerald-500/5 rounded-full blur-3xl pointer-events-none" />
 
-      {/* Full-Canvas Container */}
-      <div className="w-full max-w-[1720px] mx-auto px-4 sm:px-6 lg:px-10 xl:px-12 relative z-10 space-y-10 sm:space-y-12">
-
-        {/* Section Header with View Mode Switcher + Shuffle */}
-        <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-6 border-b border-slate-200 dark:border-slate-800 pb-6">
-          <div className="space-y-2 text-left max-w-3xl">
-            {/* Pill Tag */}
-            <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-emerald-50 dark:bg-emerald-950/70 border border-emerald-200/80 dark:border-emerald-800/50 text-emerald-800 dark:text-[#34D399] text-xs font-semibold tracking-wider uppercase shadow-xs">
+      <div className="max-w-[1720px] mx-auto px-4 sm:px-6 lg:px-10 xl:px-12 relative z-10 space-y-12">
+        {/* Top Header Row with View Switcher Controls */}
+        <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-6">
+          <div className="space-y-3 text-left">
+            {/* Scientific Badge */}
+            <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#E8F5EE] dark:bg-emerald-950/80 border border-emerald-900/10 dark:border-emerald-800/40 text-[11.5px] font-bold uppercase tracking-wider text-[#047857] dark:text-[#34D399]">
               <span className="w-1.5 h-1.5 rounded-full bg-[#10B981] animate-pulse" />
-              <span>{landingData.researchFocus?.badge || "What we study"}</span>
+              <span>{landingData?.researchFocus?.badge || "What we study"}</span>
             </div>
 
             {/* Main Headline */}
             <h2 className="text-2xl sm:text-3xl lg:text-4xl 2xl:text-[42px] font-extrabold text-slate-900 dark:text-white tracking-tight leading-snug font-[family-name:var(--font-manrope)]">
-              {landingData.researchFocus?.title || "Our Research Focus on Environment, Biology & Health"}
+              {landingData?.researchFocus?.title || "Our Research Focus on Environment, Biology & Health"}
             </h2>
-            {landingData.researchFocus?.subtitle && (
+            {landingData?.researchFocus?.subtitle && (
               <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-300 max-w-2xl font-[family-name:var(--font-inter)]">
                 {landingData.researchFocus.subtitle}
               </p>

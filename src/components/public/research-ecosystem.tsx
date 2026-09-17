@@ -3,7 +3,14 @@
 import * as React from "react";
 import Link from "next/link";
 import { FlaskConical, ArrowRight, Share2, Sparkles, CheckCircle2 } from "lucide-react";
-import { MOCK_ECOSYSTEM_NODES } from "@/data/mock-homepage";
+
+const MOCK_ECOSYSTEM_NODES = [
+  { id: "researchers", label: "Researchers", count: "", category: "People", description: "", href: "/people" },
+  { id: "projects", label: "Active Projects", count: "", category: "Investigation", description: "", href: "/projects" },
+  { id: "areas", label: "Research Areas", count: "", category: "Core Science", description: "", href: "/research" },
+  { id: "publications", label: "Publications", count: "", category: "Evidence", description: "", href: "/publications" },
+  { id: "collaborators", label: "Collaborators", count: "", category: "Global Network", description: "", href: "/about" },
+];
 
 export function ResearchEcosystem() {
   const [selectedNodeId, setSelectedNodeId] = React.useState<string>("researchers");

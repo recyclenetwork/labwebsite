@@ -98,7 +98,7 @@ const FAQS = [
 ];
 
 export default function ContactPage() {
-  const landingData = useLandingData();
+  const { data: landingData } = useLandingData();
   const [formData, setFormData] = useState<InquiryFormData>({
     name: "",
     email: "",
@@ -460,10 +460,10 @@ export default function ContactPage() {
                       <div>
                         <div className="font-bold text-slate-900 dark:text-white">Physical Location</div>
                         <div className="text-slate-600 dark:text-slate-300 mt-0.5 leading-relaxed">
-                          {landingData.contactSection?.facilityName || "Department of Environmental Sciences"}<br />
-                          {landingData.contactSection?.address || "Faculty of Biological Sciences, Jahangirnagar University, Savar, Dhaka-1342, Bangladesh"}
+                          {landingData?.contactSection?.facilityName || "Department of Environmental Sciences"}<br />
+                          {landingData?.contactSection?.address || "Faculty of Biological Sciences, Jahangirnagar University, Savar, Dhaka-1342, Bangladesh"}
                         </div>
-                        {landingData.contactSection?.gpsCoordinates && (
+                        {landingData?.contactSection?.gpsCoordinates && (
                           <div className="text-[11px] font-mono text-emerald-600 dark:text-emerald-400 mt-1">
                             GPS: {landingData.contactSection.gpsCoordinates}
                           </div>
@@ -480,13 +480,13 @@ export default function ContactPage() {
                         <div className="font-bold text-slate-900 dark:text-white">Direct Email Routing</div>
                         <div className="flex flex-col gap-0.5">
                           <a
-                            href={`mailto:${landingData.contactSection?.email || SITE_CONFIG.email}`}
+                            href={`mailto:${landingData?.contactSection?.email || SITE_CONFIG.email}`}
                             className="text-emerald-600 dark:text-[#34D399] font-medium hover:underline flex items-center gap-1"
                           >
-                            <span>{landingData.contactSection?.email || SITE_CONFIG.email}</span>
+                            <span>{landingData?.contactSection?.email || SITE_CONFIG.email}</span>
                           </a>
                           <span className="text-[11px] text-slate-500 dark:text-slate-400">
-                            {landingData.contactSection?.phone ? `Phone: ${landingData.contactSection.phone}` : "General Lab Inquiries & Collaborations"}
+                            {landingData?.contactSection?.phone ? `Phone: ${landingData.contactSection.phone}` : "General Lab Inquiries & Collaborations"}
                           </span>
                         </div>
                       </div>
@@ -500,7 +500,7 @@ export default function ContactPage() {
                       <div>
                         <div className="font-bold text-slate-900 dark:text-white">Laboratory Operating Hours</div>
                         <div className="text-slate-600 dark:text-slate-300 mt-0.5">
-                          {landingData.contactSection?.hours || "Sunday – Thursday: 09:00 AM – 05:00 PM (BST)"}
+                          {landingData?.contactSection?.hours || "Sunday – Thursday: 09:00 AM – 05:00 PM (BST)"}
                         </div>
                         <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
                           Clean-room instrumentation access by prior booking
@@ -530,7 +530,7 @@ export default function ContactPage() {
                   <div className="h-56 w-full rounded-2xl overflow-hidden border border-slate-200 dark:border-slate-800">
                     <iframe
                       title="Jahangirnagar University Campus Map"
-                      src={landingData.contactSection?.mapEmbedUrl || "https://maps.google.com/maps?q=Department+of+Environmental+Sciences,+Jahangirnagar+University,+Savar,+Dhaka,+Bangladesh&t=&z=16&ie=UTF8&iwloc=&output=embed"}
+                      src={landingData?.contactSection?.mapEmbedUrl || "https://maps.google.com/maps?q=Department+of+Environmental+Sciences,+Jahangirnagar+University,+Savar,+Dhaka,+Bangladesh&t=&z=16&ie=UTF8&iwloc=&output=embed"}
                       width="100%"
                       height="100%"
                       style={{ border: 0 }}

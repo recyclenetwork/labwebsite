@@ -98,7 +98,7 @@ export function getCategoryBadgeColor(category: string): string {
 }
 
 export function getStoredGalleryItems(): GalleryItem[] {
-  if (typeof window === "undefined") return DEFAULT_GALLERY_ITEMS;
+  if (typeof window === "undefined") return [];
   try {
     const raw = safeLocalStorageGet<GalleryItem[]>(LOCAL_STORAGE_KEY);
     if (raw && Array.isArray(raw) && raw.length > 0) {
@@ -107,11 +107,11 @@ export function getStoredGalleryItems(): GalleryItem[] {
   } catch (e) {
     console.error("Error reading gallery from storage:", e);
   }
-  return DEFAULT_GALLERY_ITEMS;
+  return [];
 }
 
 export async function getGalleryItemsAsync(): Promise<GalleryItem[]> {
-  if (typeof window === "undefined") return DEFAULT_GALLERY_ITEMS;
+  if (typeof window === "undefined") return [];
 
   // 1. Try Supabase
   try {
@@ -144,13 +144,13 @@ export async function getGalleryItemsAsync(): Promise<GalleryItem[]> {
     console.warn("IndexedDB gallery fetch error:", err);
   }
 
-  // 3. Fallback to localStorage
+  // 3. Fallback to localStorage only (no hardcoded defaults)
   const localData = safeLocalStorageGet<GalleryItem[]>(LOCAL_STORAGE_KEY);
   if (Array.isArray(localData) && localData.length > 0) {
     return localData;
   }
 
-  return DEFAULT_GALLERY_ITEMS;
+  return [];
 }
 
 export async function setStoredGalleryItems(items: GalleryItem[]): Promise<void> {

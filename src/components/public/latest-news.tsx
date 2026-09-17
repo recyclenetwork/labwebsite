@@ -13,7 +13,7 @@ interface LatestNewsProps {
 }
 
 export function LatestNews({ news: initialNews }: LatestNewsProps) {
-  const landingData = useLandingData();
+  const { data: landingData } = useLandingData();
   const scrollRef = React.useRef<HTMLDivElement>(null);
   const [isPaused, setIsPaused] = React.useState(false);
   const [articles, setArticles] = React.useState<NewsArticle[]>([]);
@@ -56,7 +56,7 @@ export function LatestNews({ news: initialNews }: LatestNewsProps) {
   React.useEffect(() => {
     if (isPaused) return;
 
-    const intervalSeconds = (landingData.newsSection?.autoSlideSeconds || 4.5) * 1000;
+    const intervalSeconds = (landingData?.newsSection?.autoSlideSeconds || 4.5) * 1000;
     const interval = setInterval(() => {
       if (scrollRef.current) {
         const { scrollLeft, scrollWidth, clientWidth } = scrollRef.current;
@@ -69,7 +69,7 @@ export function LatestNews({ news: initialNews }: LatestNewsProps) {
     }, intervalSeconds);
 
     return () => clearInterval(interval);
-  }, [isPaused, landingData.newsSection?.autoSlideSeconds]);
+  }, [isPaused, landingData?.newsSection?.autoSlideSeconds]);
 
   // Display items from dynamic articles (or fallback)
   const displayArticles = articles.length > 0 ? articles : [];
@@ -83,12 +83,12 @@ export function LatestNews({ news: initialNews }: LatestNewsProps) {
           <div className="flex flex-col space-y-3 max-w-2xl text-left">
             <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-emerald-50 dark:bg-emerald-950/80 border border-emerald-200/80 dark:border-emerald-800/40 text-xs font-semibold uppercase tracking-wider text-emerald-800 dark:text-[#34D399] w-fit">
               <Newspaper className="w-3.5 h-3.5 text-[#10B981]" />
-              <span>{landingData.newsSection?.badge || "LAB DISPATCHES"}</span>
+              <span>{landingData?.newsSection?.badge || "LAB DISPATCHES"}</span>
             </div>
             <h2 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold tracking-tight text-slate-900 dark:text-white font-[family-name:var(--font-manrope)] leading-tight">
-              {landingData.newsSection?.title || "Latest News & Insights"}
+              {landingData?.newsSection?.title || "Latest News & Insights"}
             </h2>
-            {landingData.newsSection?.subtitle && (
+            {landingData?.newsSection?.subtitle && (
               <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-300 max-w-xl font-[family-name:var(--font-inter)]">
                 {landingData.newsSection.subtitle}
               </p>

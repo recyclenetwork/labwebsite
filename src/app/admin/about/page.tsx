@@ -44,7 +44,7 @@ export default function AdminAboutPage() {
 
   useEffect(() => {
     const initial = getStoredLandingData();
-    setData(initial);
+    if (initial) setData(initial);
 
     idbGet<LandingContentData>("ecotox_landing_content_v2")
       .then((idbData) => {
@@ -56,7 +56,7 @@ export default function AdminAboutPage() {
 
     const handleUpdate = () => {
       const updated = getStoredLandingData();
-      setData(updated);
+      if (updated) setData(updated);
     };
 
     window.addEventListener("landing-content-updated", handleUpdate);
@@ -93,8 +93,8 @@ export default function AdminAboutPage() {
 
   const handleReset = () => {
     if (confirm("Reset About Page content back to initial default values?")) {
-      const reset = resetLandingData();
-      setData(reset);
+      resetLandingData();
+      setData(DEFAULT_LANDING_DATA);
       setSavedToast(true);
       setTimeout(() => setSavedToast(false), 3000);
     }

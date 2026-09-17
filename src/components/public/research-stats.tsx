@@ -1,17 +1,16 @@
 "use client";
 
 import * as React from "react";
-import type { MetricItem } from "@/data/mock-homepage";
 import { useLandingData } from "@/lib/landing-store";
 
 interface ResearchStatsProps {
-  metrics?: MetricItem[];
+  metrics?: Array<{ value: string; label: string; sublabel?: string; description: string }>;
 }
 
 export function ResearchStats({ metrics }: ResearchStatsProps) {
-  const landingData = useLandingData();
+  const { data: landingData } = useLandingData();
   const currentMetrics =
-    landingData.metrics && landingData.metrics.length > 0
+    landingData?.metrics && landingData.metrics.length > 0
       ? landingData.metrics
       : metrics || [];
 
