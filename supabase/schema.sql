@@ -507,3 +507,137 @@ VALUES
     }
   }'::jsonb, 'Homepage CMS Configuration & Content')
 ON CONFLICT (key) DO NOTHING;
+
+-- Seed Research Pillars ("What We Study" Section)
+INSERT INTO public.site_settings (key, value, description)
+VALUES
+  ('research_pillars', '[
+    {
+      "id": "pillar-1",
+      "index": "01",
+      "code": "AREA-01",
+      "title": "Environmental Contamination",
+      "shortTitle": "Contamination",
+      "slug": "environmental-contamination",
+      "description": "Investigating persistent contaminants, PFAS, and trace metals across soil, water, and biological matrices.",
+      "imageSrc": "/images/areas/area-1.jpg",
+      "imageAlt": "Environmental soil, water and sediment contamination analysis in lab",
+      "icon_name": "FlaskConical",
+      "tags": ["Trace Metals", "PFAS Analysis", "Soil Depth"],
+      "keyHighlight": "Multi-Matrix Screening",
+      "instrumentation": "Orbitrap LC-HRMS • EPA Method 533/537.1",
+      "targetMatrices": "Soil sediment cores, agricultural runoff, groundwater",
+      "detectionMetric": "< 0.1 ppt Detection Limit",
+      "angleDeg": 270,
+      "display_order": 1
+    },
+    {
+      "id": "pillar-2",
+      "index": "02",
+      "code": "AREA-02",
+      "title": "Microplastics & Emerging Pollutants",
+      "shortTitle": "Microplastics",
+      "slug": "microplastics-emerging-pollutants",
+      "description": "Tracking polymer degradation, sub-micron particulate transport, and trophic bio-accumulation in aquatic food webs.",
+      "imageSrc": "/images/areas/area-2.jpg",
+      "imageAlt": "Microscopic microplastic fluorescent fibers under polarized laboratory microscope",
+      "icon_name": "Sparkles",
+      "tags": ["Micro-FTIR", "Polymer Fate", "Trophic Transfer"],
+      "keyHighlight": "Sub-Micron Detection",
+      "instrumentation": "Micro-FTIR Imaging • Py-GC/MS Fingerprinting",
+      "targetMatrices": "Aquatic fauna tissues, marine sediments, airborne dust",
+      "detectionMetric": "Sub-1 µm Spatial Resolution",
+      "angleDeg": 330,
+      "display_order": 2
+    },
+    {
+      "id": "pillar-3",
+      "index": "03",
+      "code": "AREA-03",
+      "title": "Health Risk & Toxicological Impact",
+      "shortTitle": "Health & Risk",
+      "slug": "health-risk-toxicological-impact",
+      "description": "Modeling toxicological dose-response kinetics, bioaccumulation factors, and human exposure pathways.",
+      "imageSrc": "/images/areas/area-3.jpg",
+      "imageAlt": "Toxicology cell culture plates and biomarkers analysis",
+      "icon_name": "Heart",
+      "tags": ["Dose-Response", "Target Organ", "Biomarkers"],
+      "keyHighlight": "Physiological Modeling",
+      "instrumentation": "Confocal Fluorescence • Cytotoxicity Bioassays",
+      "targetMatrices": "Human epithelial lines, bioindicator fish hepatocytes",
+      "detectionMetric": "Single-Cell Viability Metrics",
+      "angleDeg": 30,
+      "display_order": 3
+    },
+    {
+      "id": "pillar-4",
+      "index": "04",
+      "code": "AREA-04",
+      "title": "Circular Systems & Remediation",
+      "shortTitle": "Circular Systems",
+      "slug": "circular-systems-remediation",
+      "description": "Engineering bio-adsorbents, functionalized biochars, and nature-based solutions for industrial effluent purification.",
+      "imageSrc": "/images/areas/area-4.jpg",
+      "imageAlt": "Eco-friendly biochar water filtration matrix in pilot scale column",
+      "icon_name": "Leaf",
+      "tags": ["Bio-adsorption", "Zero-Discharge", "Remediation"],
+      "keyHighlight": "Circular Engineering",
+      "instrumentation": "BET Surface Area Analyzer • Continuous Fixed-Bed Columns",
+      "targetMatrices": "Textile effluent, municipal wastewater, storm runoff",
+      "detectionMetric": "> 98.4% Heavy Metal Sorption",
+      "angleDeg": 90,
+      "display_order": 4
+    },
+    {
+      "id": "pillar-5",
+      "index": "05",
+      "code": "AREA-05",
+      "title": "Ecosystem Health & Monitoring",
+      "shortTitle": "Monitoring",
+      "slug": "ecosystem-health-monitoring",
+      "description": "Long-term monitoring of riverine, estuarine, and wetland biodiversity indicators responding to chemical stress.",
+      "imageSrc": "/images/slide-1-field.jpg",
+      "imageAlt": "River and wetland environmental field monitoring",
+      "icon_name": "Activity",
+      "tags": ["Bio-Indicators", "Water Quality", "Delta Ecology"],
+      "keyHighlight": "Landscape Telemetry",
+      "instrumentation": "Multiparameter Sonde Array • Automated Passive Samplers",
+      "targetMatrices": "Lower Meghna River Basin, wetland tributaries, coastal benthos",
+      "detectionMetric": "Continuous In-situ Hydrology Logging",
+      "angleDeg": 150,
+      "display_order": 5
+    },
+    {
+      "id": "pillar-6",
+      "index": "06",
+      "code": "AREA-06",
+      "title": "Spatial Ecotoxicology & GIS",
+      "shortTitle": "Spatial GIS",
+      "slug": "spatial-ecotoxicology-gis",
+      "description": "Integrating geospatial modeling, remote sensing, and plume dispersion mapping for predictive risk assessments.",
+      "imageSrc": "/images/gallery/field-sampling.jpg",
+      "imageAlt": "Geographic GIS environmental hazard mapping",
+      "icon_name": "Orbit",
+      "tags": ["GIS Mapping", "Pollution Plumes", "Risk Zones"],
+      "keyHighlight": "Predictive Dispersion",
+      "instrumentation": "ArcGIS Pro • Satellite Multispectral Surface Modeling",
+      "targetMatrices": "Regional watershed catchments, industrial corridor zones",
+      "detectionMetric": "10m Multispectral Grid Resolution",
+      "angleDeg": 210,
+      "display_order": 6
+    }
+  ]'::jsonb, 'Research Pillars and What We Study interactive deck')
+ON CONFLICT (key) DO UPDATE SET
+  value = EXCLUDED.value;
+
+-- ------------------------------------------------------------------------------
+-- 13. POSTGREST SCHEMA PERMISSIONS (Crucial for anon & authenticated roles)
+-- ------------------------------------------------------------------------------
+GRANT USAGE ON SCHEMA public TO anon, authenticated, service_role;
+GRANT ALL ON ALL TABLES IN SCHEMA public TO anon, authenticated, service_role;
+GRANT ALL ON ALL SEQUENCES IN SCHEMA public TO anon, authenticated, service_role;
+GRANT ALL ON ALL ROUTINES IN SCHEMA public TO anon, authenticated, service_role;
+ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON TABLES TO anon, authenticated, service_role;
+ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON SEQUENCES TO anon, authenticated, service_role;
+ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON ROUTINES TO anon, authenticated, service_role;
+
