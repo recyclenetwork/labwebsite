@@ -8,17 +8,12 @@ import {
   ProjectResearchArea,
 } from "./types";
 import {
-  SEED_PROJECTS,
-  SEED_RESEARCH_AREAS,
-  SEED_RESEARCHERS,
-  SEED_COLLABORATORS,
-} from "./seed-data";
-import {
   idbGet,
   idbSet,
   safeLocalStorageGet,
   safeLocalStorageSet,
 } from "@/lib/storage/idb-storage";
+import { getAllResearchAreas } from "@/lib/research-areas/store";
 
 function getQueryClient() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL || "https://ztgwpyoztzpvqnwoixuy.supabase.co";
@@ -42,7 +37,7 @@ export function getLocalProjects(): ProjectWithRelations[] {
     const raw = localStorage.getItem(STORAGE_KEY) || localStorage.getItem("lab_projects_store");
     if (raw) {
       const parsed = JSON.parse(raw);
-      if (Array.isArray(parsed) && parsed.length > 0) {
+      if (Array.isArray(parsed)) {
         memoryProjects = parsed;
         return parsed;
       }
@@ -82,12 +77,12 @@ export async function getResearchAreas(): Promise<ProjectResearchArea[]> {
       .select("id, title, slug, description, icon_name")
       .order("display_order", { ascending: true });
 
-    if (error || !data || data.length === 0) {
-      return [];
+    if (!error && data && data.length > 0) {
+      return data as ProjectResearchArea[];
     }
-    return data as ProjectResearchArea[];
+    return getAllResearchAreas();
   } catch {
-    return [];
+    return getAllResearchAreas();
   }
 }
 
@@ -153,9 +148,13 @@ export async function getPublishedProjects(
 
     const { data, error } = await query;
 
-    if (error || !data || data.length === 0) {
-      // Fallback to local memory/seed dataset
+    if (error) {
+      // Fallback to local memory cache on network/table error
       return filterLocalProjects(getLocalProjects(), filters, includeDrafts);
+    }
+
+    if (!data || data.length === 0) {
+      return [];
     }
 
     // Map Supabase relation joins into flat ProjectWithRelations

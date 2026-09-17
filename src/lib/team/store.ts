@@ -8,7 +8,7 @@ const LOCAL_STORAGE_KEY = "ecotox_lab_team_members_v1";
 export function getCachedTeamMembers(): TeamMember[] {
   if (typeof window !== "undefined") {
     const cached = safeLocalStorageGet<TeamMember[]>(LOCAL_STORAGE_KEY);
-    if (Array.isArray(cached) && cached.length > 0) {
+    if (Array.isArray(cached)) {
       return cached;
     }
   }

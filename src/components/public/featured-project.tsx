@@ -16,7 +16,6 @@ import {
 } from "lucide-react";
 import { useLandingData } from "@/lib/landing-store";
 import { getPublishedProjects, getLocalProjects } from "@/lib/projects/queries";
-import { SEED_PROJECTS } from "@/lib/projects/seed-data";
 import { ProjectWithRelations } from "@/lib/projects/types";
 
 interface DisplayProject {
@@ -111,14 +110,10 @@ export function FeaturedProject() {
   const loadAllProjects = React.useCallback(() => {
     try {
       const local = getLocalProjects();
-      if (local && local.length > 0) {
-        setProjects(formatProjects(local));
-      } else {
-        setProjects(formatProjects(SEED_PROJECTS));
-      }
+      setProjects(formatProjects(local || []));
     } catch (e) {
       console.error("Failed to load local projects:", e);
-      setProjects(formatProjects(SEED_PROJECTS));
+      setProjects([]);
     } finally {
       setLoading(false);
     }
@@ -129,7 +124,7 @@ export function FeaturedProject() {
 
     // Fetch fresh from Supabase if online
     getPublishedProjects({}, false).then((remote) => {
-      if (remote && remote.length > 0) {
+      if (remote) {
         setProjects(formatProjects(remote));
       }
     }).catch(() => {});
@@ -181,6 +176,11 @@ export function FeaturedProject() {
     }
     setTouchStart(null);
   };
+
+  // If loading finished and there are no projects in the database, cleanly hide this section
+  if (!loading && projects.length === 0) {
+    return null;
+  }
 
   return (
     <section className="py-16 sm:py-24 bg-white dark:bg-[#090D16] transition-colors duration-300 relative overflow-hidden">

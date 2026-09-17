@@ -31,7 +31,8 @@ import {
   Layers,
   Clock,
   Sparkles,
-  ChevronDown
+  ChevronDown,
+  AlertTriangle
 } from "lucide-react";
 
 interface AdminLayoutProps {
@@ -48,6 +49,18 @@ function AdminLayoutContent({ children }: AdminLayoutProps) {
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [isCheckingAuth, setIsCheckingAuth] = useState(true);
   const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
+  const [tablesMissing, setTablesMissing] = useState(false);
+
+  useEffect(() => {
+    fetch("/api/admin/supabase-status")
+      .then((res) => res.json())
+      .then((data) => {
+        if (data && !data.allTablesReady) {
+          setTablesMissing(true);
+        }
+      })
+      .catch(() => {});
+  }, []);
 
   useEffect(() => {
     let mounted = true;
@@ -572,6 +585,23 @@ function AdminLayoutContent({ children }: AdminLayoutProps) {
 
         {/* Page Content View */}
         <main className="flex-1 overflow-y-auto p-4 sm:p-6 md:p-8">
+          {tablesMissing && pathname !== "/admin/settings" && (
+            <div className="mb-6 p-3.5 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-800 dark:text-amber-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs shadow-xs">
+              <div className="flex items-center gap-2">
+                <AlertTriangle className="w-4 h-4 text-amber-500 shrink-0" />
+                <span>
+                  <strong>Cloud Sync Notice:</strong> Supabase database tables need setup so changes sync across your phone and deployed website.
+                </span>
+              </div>
+              <Link
+                href="/admin/settings"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 text-amber-900 dark:text-amber-100 font-bold transition shrink-0"
+              >
+                <span>Setup &amp; Copy SQL</span>
+                <span>&rarr;</span>
+              </Link>
+            </div>
+          )}
           {children}
         </main>
       </div>

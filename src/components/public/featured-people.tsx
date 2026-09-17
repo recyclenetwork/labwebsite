@@ -98,6 +98,10 @@ export function FeaturedPeople({ people: initialPeople }: FeaturedPeopleProps) {
     }
   };
 
+  if (researchers.length === 0) {
+    return null;
+  }
+
   return (
     <section className="py-20 lg:py-28 bg-[#F4F8F5] dark:bg-[#0B1120] border-t border-slate-200/90 dark:border-slate-800 transition-colors duration-300 relative overflow-hidden">
       {/* Ambient background glow */}

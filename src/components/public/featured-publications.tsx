@@ -156,6 +156,10 @@ export function FeaturedPublications({ publications: propPublications }: Feature
     }
   };
 
+  if (!loading && items.length === 0) {
+    return null;
+  }
+
   return (
     <section className="py-20 lg:py-28 bg-[#F4F8F5] dark:bg-[#0B1120] border-y border-slate-200/80 dark:border-slate-800 transition-colors duration-300 relative overflow-hidden">
       <div className="max-w-[1720px] mx-auto px-4 sm:px-6 lg:px-10 xl:px-12 relative z-10 space-y-10 sm:space-y-12">

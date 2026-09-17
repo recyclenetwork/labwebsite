@@ -14,6 +14,9 @@ import { ResearchGallery } from "@/components/public/research-gallery";
 import { ContactPreview } from "@/components/public/contact-preview";
 import { Footer } from "@/components/public/footer";
 
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 export default function HomePage() {
   return (
     <div className="min-h-screen bg-[var(--bg-page)] text-[var(--text-main)] transition-colors duration-300 flex flex-col justify-between">

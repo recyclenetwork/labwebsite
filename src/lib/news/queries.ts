@@ -1,7 +1,5 @@
 import { createClient } from "@/lib/supabase/client";
 import { NewsArticle, NewsStats, NewsFilterParams } from "./types";
-import { SEED_NEWS_ARTICLES } from "./seed-data";
-import { SEED_RESEARCH_AREAS, SEED_PROJECTS } from "../projects/seed-data";
 import { idbGet, idbSet, safeLocalStorageGet, safeLocalStorageSet } from "@/lib/storage/idb-storage";
 
 const LOCAL_STORAGE_KEY = "lab_news_articles_override_v2";
@@ -13,7 +11,7 @@ export function getLocalNews(): NewsArticle[] {
   if (typeof window === "undefined") return [];
   try {
     const cached = safeLocalStorageGet<NewsArticle[]>(LOCAL_STORAGE_KEY);
-    if (cached && Array.isArray(cached) && cached.length > 0) {
+    if (cached && Array.isArray(cached)) {
       return cached;
     }
     return [];
@@ -45,11 +43,11 @@ export async function getPublishedNews(
   if (typeof window !== "undefined") {
     try {
       const idbData = await idbGet<NewsArticle[]>(LOCAL_STORAGE_KEY);
-      if (Array.isArray(idbData) && idbData.length > 0) {
+      if (Array.isArray(idbData)) {
         localList = idbData;
       } else {
         const lsData = safeLocalStorageGet<NewsArticle[]>(LOCAL_STORAGE_KEY);
-        if (Array.isArray(lsData) && lsData.length > 0) {
+        if (Array.isArray(lsData)) {
           localList = lsData;
           idbSet(LOCAL_STORAGE_KEY, lsData);
         }
