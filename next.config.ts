@@ -72,6 +72,9 @@ const nextConfig: NextConfig = {
       },
     ],
   },
+  outputFileTracingIncludes: {
+    "/api/admin/supabase-status": ["./supabase/schema.sql"],
+  },
 };
 
 export default nextConfig;
