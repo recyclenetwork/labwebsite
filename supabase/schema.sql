@@ -360,50 +360,153 @@ ALTER TABLE public.applications ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.media ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.admin_activity ENABLE ROW LEVEL SECURITY;
 
+-- ------------------------------------------------------------------------------
+-- 10. ROW LEVEL SECURITY (RLS) POLICIES (Idempotent: Safe to Re-Run)
+-- ------------------------------------------------------------------------------
+
+ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.site_settings ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.homepage_sections ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.research_areas ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.people ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.projects ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.project_research_areas ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.project_researchers ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.project_collaborators ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.publications ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.publication_authors ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.publication_research_areas ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.publication_projects ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.news ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.gallery_events ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.inquiries ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.messages ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.opportunities ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.applications ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.media ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.admin_activity ENABLE ROW LEVEL SECURITY;
+
 -- Public READ policies
+DROP POLICY IF EXISTS "Public Read Site Settings" ON public.site_settings;
 CREATE POLICY "Public Read Site Settings" ON public.site_settings FOR SELECT USING (true);
+
+DROP POLICY IF EXISTS "Public Read Homepage Sections" ON public.homepage_sections;
 CREATE POLICY "Public Read Homepage Sections" ON public.homepage_sections FOR SELECT USING (true);
+
+DROP POLICY IF EXISTS "Public Read Research Areas" ON public.research_areas;
 CREATE POLICY "Public Read Research Areas" ON public.research_areas FOR SELECT USING (true);
+
+DROP POLICY IF EXISTS "Public Read People" ON public.people;
 CREATE POLICY "Public Read People" ON public.people FOR SELECT USING (true);
+
+DROP POLICY IF EXISTS "Public Read Projects" ON public.projects;
 CREATE POLICY "Public Read Projects" ON public.projects FOR SELECT USING (true);
+
+DROP POLICY IF EXISTS "Public Read Project Research Areas" ON public.project_research_areas;
 CREATE POLICY "Public Read Project Research Areas" ON public.project_research_areas FOR SELECT USING (true);
+
+DROP POLICY IF EXISTS "Public Read Project Researchers" ON public.project_researchers;
 CREATE POLICY "Public Read Project Researchers" ON public.project_researchers FOR SELECT USING (true);
+
+DROP POLICY IF EXISTS "Public Read Project Collaborators" ON public.project_collaborators;
 CREATE POLICY "Public Read Project Collaborators" ON public.project_collaborators FOR SELECT USING (true);
+
+DROP POLICY IF EXISTS "Public Read Publications" ON public.publications;
 CREATE POLICY "Public Read Publications" ON public.publications FOR SELECT USING (true);
+
+DROP POLICY IF EXISTS "Public Read Publication Authors" ON public.publication_authors;
 CREATE POLICY "Public Read Publication Authors" ON public.publication_authors FOR SELECT USING (true);
+
+DROP POLICY IF EXISTS "Public Read Publication Research Areas" ON public.publication_research_areas;
 CREATE POLICY "Public Read Publication Research Areas" ON public.publication_research_areas FOR SELECT USING (true);
+
+DROP POLICY IF EXISTS "Public Read Publication Projects" ON public.publication_projects;
 CREATE POLICY "Public Read Publication Projects" ON public.publication_projects FOR SELECT USING (true);
+
+DROP POLICY IF EXISTS "Public Read News" ON public.news;
 CREATE POLICY "Public Read News" ON public.news FOR SELECT USING (true);
+
+DROP POLICY IF EXISTS "Public Read Gallery Events" ON public.gallery_events;
 CREATE POLICY "Public Read Gallery Events" ON public.gallery_events FOR SELECT USING (true);
+
+DROP POLICY IF EXISTS "Public Read Opportunities" ON public.opportunities;
 CREATE POLICY "Public Read Opportunities" ON public.opportunities FOR SELECT USING (true);
+
+DROP POLICY IF EXISTS "Public Read Media" ON public.media;
 CREATE POLICY "Public Read Media" ON public.media FOR SELECT USING (true);
 
 -- Public Form Submissions (INSERT)
+DROP POLICY IF EXISTS "Public Insert Inquiries" ON public.inquiries;
 CREATE POLICY "Public Insert Inquiries" ON public.inquiries FOR INSERT WITH CHECK (true);
+
+DROP POLICY IF EXISTS "Public Insert Messages" ON public.messages;
 CREATE POLICY "Public Insert Messages" ON public.messages FOR INSERT WITH CHECK (true);
+
+DROP POLICY IF EXISTS "Public Insert Applications" ON public.applications;
 CREATE POLICY "Public Insert Applications" ON public.applications FOR INSERT WITH CHECK (true);
 
 -- Authenticated Users & Admins (Full Management)
+DROP POLICY IF EXISTS "Auth Manage Site Settings" ON public.site_settings;
 CREATE POLICY "Auth Manage Site Settings" ON public.site_settings FOR ALL USING (auth.role() = 'authenticated' OR auth.role() = 'service_role');
+
+DROP POLICY IF EXISTS "Auth Manage Homepage Sections" ON public.homepage_sections;
 CREATE POLICY "Auth Manage Homepage Sections" ON public.homepage_sections FOR ALL USING (auth.role() = 'authenticated' OR auth.role() = 'service_role');
+
+DROP POLICY IF EXISTS "Auth Manage Research Areas" ON public.research_areas;
 CREATE POLICY "Auth Manage Research Areas" ON public.research_areas FOR ALL USING (auth.role() = 'authenticated' OR auth.role() = 'service_role');
+
+DROP POLICY IF EXISTS "Auth Manage People" ON public.people;
 CREATE POLICY "Auth Manage People" ON public.people FOR ALL USING (auth.role() = 'authenticated' OR auth.role() = 'service_role');
+
+DROP POLICY IF EXISTS "Auth Manage Projects" ON public.projects;
 CREATE POLICY "Auth Manage Projects" ON public.projects FOR ALL USING (auth.role() = 'authenticated' OR auth.role() = 'service_role');
+
+DROP POLICY IF EXISTS "Auth Manage Project Research Areas" ON public.project_research_areas;
 CREATE POLICY "Auth Manage Project Research Areas" ON public.project_research_areas FOR ALL USING (auth.role() = 'authenticated' OR auth.role() = 'service_role');
+
+DROP POLICY IF EXISTS "Auth Manage Project Researchers" ON public.project_researchers;
 CREATE POLICY "Auth Manage Project Researchers" ON public.project_researchers FOR ALL USING (auth.role() = 'authenticated' OR auth.role() = 'service_role');
+
+DROP POLICY IF EXISTS "Auth Manage Project Collaborators" ON public.project_collaborators;
 CREATE POLICY "Auth Manage Project Collaborators" ON public.project_collaborators FOR ALL USING (auth.role() = 'authenticated' OR auth.role() = 'service_role');
+
+DROP POLICY IF EXISTS "Auth Manage Publications" ON public.publications;
 CREATE POLICY "Auth Manage Publications" ON public.publications FOR ALL USING (auth.role() = 'authenticated' OR auth.role() = 'service_role');
+
+DROP POLICY IF EXISTS "Auth Manage Publication Authors" ON public.publication_authors;
 CREATE POLICY "Auth Manage Publication Authors" ON public.publication_authors FOR ALL USING (auth.role() = 'authenticated' OR auth.role() = 'service_role');
+
+DROP POLICY IF EXISTS "Auth Manage Publication Research Areas" ON public.publication_research_areas;
 CREATE POLICY "Auth Manage Publication Research Areas" ON public.publication_research_areas FOR ALL USING (auth.role() = 'authenticated' OR auth.role() = 'service_role');
+
+DROP POLICY IF EXISTS "Auth Manage Publication Projects" ON public.publication_projects;
 CREATE POLICY "Auth Manage Publication Projects" ON public.publication_projects FOR ALL USING (auth.role() = 'authenticated' OR auth.role() = 'service_role');
+
+DROP POLICY IF EXISTS "Auth Manage News" ON public.news;
 CREATE POLICY "Auth Manage News" ON public.news FOR ALL USING (auth.role() = 'authenticated' OR auth.role() = 'service_role');
+
+DROP POLICY IF EXISTS "Auth Manage Gallery Events" ON public.gallery_events;
 CREATE POLICY "Auth Manage Gallery Events" ON public.gallery_events FOR ALL USING (auth.role() = 'authenticated' OR auth.role() = 'service_role');
+
+DROP POLICY IF EXISTS "Auth Manage Inquiries" ON public.inquiries;
 CREATE POLICY "Auth Manage Inquiries" ON public.inquiries FOR ALL USING (auth.role() = 'authenticated' OR auth.role() = 'service_role');
+
+DROP POLICY IF EXISTS "Auth Manage Messages" ON public.messages;
 CREATE POLICY "Auth Manage Messages" ON public.messages FOR ALL USING (auth.role() = 'authenticated' OR auth.role() = 'service_role');
+
+DROP POLICY IF EXISTS "Auth Manage Opportunities" ON public.opportunities;
 CREATE POLICY "Auth Manage Opportunities" ON public.opportunities FOR ALL USING (auth.role() = 'authenticated' OR auth.role() = 'service_role');
+
+DROP POLICY IF EXISTS "Auth Manage Applications" ON public.applications;
 CREATE POLICY "Auth Manage Applications" ON public.applications FOR ALL USING (auth.role() = 'authenticated' OR auth.role() = 'service_role');
+
+DROP POLICY IF EXISTS "Auth Manage Media" ON public.media;
 CREATE POLICY "Auth Manage Media" ON public.media FOR ALL USING (auth.role() = 'authenticated' OR auth.role() = 'service_role');
+
+DROP POLICY IF EXISTS "Auth Manage Profiles" ON public.profiles;
 CREATE POLICY "Auth Manage Profiles" ON public.profiles FOR ALL USING (auth.role() = 'authenticated' OR auth.role() = 'service_role');
+
+DROP POLICY IF EXISTS "Auth Manage Admin Activity" ON public.admin_activity;
 CREATE POLICY "Auth Manage Admin Activity" ON public.admin_activity FOR ALL USING (auth.role() = 'authenticated' OR auth.role() = 'service_role');
 
 -- ------------------------------------------------------------------------------
@@ -416,9 +519,16 @@ VALUES
   ('resumes', 'resumes', false)
 ON CONFLICT (id) DO NOTHING;
 
+DROP POLICY IF EXISTS "Public Read Media Storage" ON storage.objects;
 CREATE POLICY "Public Read Media Storage" ON storage.objects FOR SELECT USING (bucket_id IN ('media', 'documents'));
+
+DROP POLICY IF EXISTS "Auth Upload Media Storage" ON storage.objects;
 CREATE POLICY "Auth Upload Media Storage" ON storage.objects FOR INSERT WITH CHECK (bucket_id IN ('media', 'documents') AND (auth.role() = 'authenticated' OR auth.role() = 'service_role'));
+
+DROP POLICY IF EXISTS "Public Upload Resumes" ON storage.objects;
 CREATE POLICY "Public Upload Resumes" ON storage.objects FOR INSERT WITH CHECK (bucket_id = 'resumes');
+
+DROP POLICY IF EXISTS "Auth Read Resumes" ON storage.objects;
 CREATE POLICY "Auth Read Resumes" ON storage.objects FOR SELECT USING (bucket_id = 'resumes' AND (auth.role() = 'authenticated' OR auth.role() = 'service_role'));
 
 -- ------------------------------------------------------------------------------
