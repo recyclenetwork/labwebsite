@@ -22,6 +22,12 @@ import {
   Shuffle,
 } from "lucide-react";
 import { useLandingData } from "@/lib/landing-store";
+import {
+  ResearchPillar,
+  fetchResearchPillarsAsync,
+  getStoredResearchPillars,
+  DEFAULT_RESEARCH_PILLARS,
+} from "@/lib/research-areas/store";
 
 interface StudyDomain {
   id: string;
@@ -41,110 +47,39 @@ interface StudyDomain {
   angleDeg: number;
 }
 
-const STUDY_DOMAINS: StudyDomain[] = [
-  {
-    id: "1",
-    index: "01",
-    title: "Environmental Contamination",
-    shortTitle: "Contamination",
-    slug: "environmental-contamination",
-    description: "Investigating persistent contaminants, PFAS, and trace metals across soil, water, and biological matrices.",
-    imageSrc: "/images/areas/area-1.jpg",
-    imageAlt: "Environmental soil, water and sediment contamination analysis in lab",
-    icon: FlaskConical,
-    tags: ["Trace Metals", "PFAS Analysis", "Soil Depth"],
-    keyHighlight: "Multi-Matrix Screening",
-    instrumentation: "Orbitrap LC-HRMS • EPA Method 533/537.1",
-    targetMatrices: "Soil sediment cores, agricultural runoff, groundwater",
-    detectionMetric: "< 0.1 ppt Detection Limit",
-    angleDeg: 270,
-  },
-  {
-    id: "2",
-    index: "02",
-    title: "Microplastics & Emerging Pollutants",
-    shortTitle: "Microplastics",
-    slug: "microplastics-emerging-pollutants",
-    description: "Tracking polymer degradation, sub-micron particulate transport, and trophic bio-accumulation in aquatic food webs.",
-    imageSrc: "/images/areas/area-2.jpg",
-    imageAlt: "Microscopic microplastic fluorescent fibers under polarized laboratory microscope",
-    icon: Sparkles,
-    tags: ["Micro-FTIR", "Polymer Fate", "Trophic Transfer"],
-    keyHighlight: "Sub-Micron Detection",
-    instrumentation: "Micro-FTIR Imaging • Py-GC/MS Fingerprinting",
-    targetMatrices: "Aquatic fauna tissues, marine sediments, airborne dust",
-    detectionMetric: "Sub-1 µm Spatial Resolution",
-    angleDeg: 330,
-  },
-  {
-    id: "3",
-    index: "03",
-    title: "Environmental Health & Risk",
-    shortTitle: "Health & Risk",
-    slug: "environmental-health-risk",
-    description: "Connecting chemical exposure pathways to cellular oxidative stress, toxicogenomics, and public health risk models.",
-    imageSrc: "/images/areas/area-3.jpg",
-    imageAlt: "Cellular bioassays and toxicogenomic scanner in clean research laboratory",
-    icon: HeartPulse,
-    tags: ["Cellular Bioassays", "Toxicogenomics", "Risk Models"],
-    keyHighlight: "Molecular Toxicology",
-    instrumentation: "In-Vitro Mammalian Assays • Flow Cytometry",
-    targetMatrices: "Human cell lines, biomarker sera, epidemiological cohorts",
-    detectionMetric: "Multi-Gene Expression Profiling",
-    angleDeg: 30,
-  },
-  {
-    id: "4",
-    index: "04",
-    title: "Sustainable & Circular Systems",
-    shortTitle: "Circular Systems",
-    slug: "sustainable-circular-systems",
-    description: "Developing evidence-based engineered bioremediation, catalytic adsorption, and circular nutrient recovery frameworks.",
-    imageSrc: "https://images.unsplash.com/photo-1530587191325-3db32d826c18?auto=format&fit=crop&w=800&q=80",
-    imageAlt: "Sustainable circular bioremediation and ecological resource recovery system",
-    icon: Leaf,
-    tags: ["Bioremediation", "Resource Recovery", "Closed-Loop"],
-    keyHighlight: "Circular Systems",
-    instrumentation: "Continuous Algal Bioreactors • Biochar Pyrolysis",
-    targetMatrices: "Industrial wastewater, municipal sludge, agricultural wastes",
-    detectionMetric: "> 94% Contaminant Recovery",
-    angleDeg: 90,
-  },
-  {
-    id: "5",
-    index: "05",
-    title: "Environmental Monitoring & Analytics",
-    shortTitle: "Monitoring",
-    slug: "environmental-monitoring-analytics",
-    description: "Deploying high-frequency autonomous sensors and data-driven analytical pipelines to track real-time environmental shifts.",
-    imageSrc: "https://images.unsplash.com/photo-1576086213369-97a306d36557?auto=format&fit=crop&w=800&q=80",
-    imageAlt: "High-resolution mass spectrometry and analytical monitoring laboratory",
-    icon: Activity,
-    tags: ["In-Situ Sensors", "Automated Sondes", "Real-Time Telemetry"],
-    keyHighlight: "High-Resolution Analytics",
-    instrumentation: "Multi-Parameter Sondes • Automated Telemetry",
-    targetMatrices: "Continuous river discharge, atmospheric flux, weather stations",
-    detectionMetric: "15-Minute Continuous Streaming",
-    angleDeg: 150,
-  },
-  {
-    id: "6",
-    index: "06",
-    title: "Spatial Analysis & Environmental GIS",
-    shortTitle: "Spatial GIS",
-    slug: "environmental-gis-spatial-analysis",
-    description: "Mapping spatial contamination gradients, satellite multi-spectral remote sensing, and watershed hydrodynamic modeling.",
-    imageSrc: "https://images.unsplash.com/photo-1524661135-423995f22d0b?auto=format&fit=crop&w=800&q=80",
-    imageAlt: "Environmental GIS satellite elevation contours and watershed spatial modeling",
-    icon: Compass,
-    tags: ["Satellite Remote Sensing", "Hydro-DEM", "Spatial Geostatistics"],
-    keyHighlight: "Landscape-Scale GIS",
-    instrumentation: "Sentinel-2 / Landsat-9 • Hydro-DEM Contaminant Flow",
-    targetMatrices: "Watershed basins, land-use classifications, coastal zones",
-    detectionMetric: "10m Ground Resolution Mapping",
-    angleDeg: 210,
-  },
-];
+const ICON_REGISTRY: Record<string, React.ComponentType<{ className?: string }>> = {
+  FlaskConical,
+  Sparkles,
+  HeartPulse,
+  Leaf,
+  Activity,
+  Compass,
+  Microscope,
+  Atom,
+  Waves,
+  Layers,
+};
+
+function mapPillarToDomain(p: ResearchPillar, idx: number): StudyDomain {
+  const IconComp = ICON_REGISTRY[p.icon_name] || FlaskConical;
+  return {
+    id: p.id,
+    index: p.index || String(idx + 1).padStart(2, "0"),
+    title: p.title,
+    shortTitle: p.shortTitle || p.title.split(" ")[0],
+    slug: p.slug,
+    description: p.description,
+    imageSrc: p.imageSrc || "/images/areas/area-1.jpg",
+    imageAlt: p.imageAlt || p.title,
+    icon: IconComp,
+    tags: p.tags || [],
+    keyHighlight: p.keyHighlight || "Scientific Focus",
+    instrumentation: p.instrumentation || "Analytical Instrumentation",
+    targetMatrices: p.targetMatrices || "Environmental matrices",
+    detectionMetric: p.detectionMetric || "Analytical Limit",
+    angleDeg: p.angleDeg || (idx * 60) % 360,
+  };
+}
 
 interface ResearchAreasProps {
   areas?: unknown;
@@ -153,8 +88,26 @@ interface ResearchAreasProps {
 export function ResearchAreas({ areas }: ResearchAreasProps = {}) {
   const { data: landingData } = useLandingData();
   const [viewMode, setViewMode] = React.useState<"deck" | "radial" | "grid">("deck");
-  const [domains, setDomains] = React.useState<StudyDomain[]>(STUDY_DOMAINS);
-  const [activeCard, setActiveCard] = React.useState<StudyDomain>(STUDY_DOMAINS[0]);
+  const [domains, setDomains] = React.useState<StudyDomain[]>(() => {
+    if (typeof window !== "undefined") {
+      const stored = getStoredResearchPillars();
+      if (stored && stored.length > 0) {
+        return stored.map(mapPillarToDomain);
+      }
+    }
+    return DEFAULT_RESEARCH_PILLARS.map(mapPillarToDomain);
+  });
+
+  const [activeCard, setActiveCard] = React.useState<StudyDomain>(() => {
+    if (typeof window !== "undefined") {
+      const stored = getStoredResearchPillars();
+      if (stored && stored.length > 0) {
+        return mapPillarToDomain(stored[0], 0);
+      }
+    }
+    return mapPillarToDomain(DEFAULT_RESEARCH_PILLARS[0], 0);
+  });
+
   const [isHovering, setIsHovering] = React.useState(false);
   const [isShuffling, setIsShuffling] = React.useState(false);
 
@@ -168,6 +121,39 @@ export function ResearchAreas({ areas }: ResearchAreasProps = {}) {
     return arr;
   }, []);
 
+  // Fetch live research pillars from Supabase / storage
+  const loadPillars = React.useCallback(async () => {
+    try {
+      const latest = await fetchResearchPillarsAsync();
+      if (Array.isArray(latest) && latest.length > 0) {
+        const mapped = latest.map(mapPillarToDomain);
+        setDomains(mapped);
+        setActiveCard((prev) => {
+          const match = mapped.find((m) => m.id === prev?.id);
+          return match || mapped[0];
+        });
+      }
+    } catch (err) {
+      console.warn("Could not fetch remote research pillars:", err);
+    }
+  }, []);
+
+  React.useEffect(() => {
+    loadPillars();
+
+    const handleUpdate = () => {
+      loadPillars();
+    };
+
+    window.addEventListener("lab_research_areas_updated", handleUpdate);
+    window.addEventListener("storage", handleUpdate);
+
+    return () => {
+      window.removeEventListener("lab_research_areas_updated", handleUpdate);
+      window.removeEventListener("storage", handleUpdate);
+    };
+  }, [loadPillars]);
+
   // Randomize View Mode & Cards on client load based on admin settings
   React.useEffect(() => {
     const shouldShuffleMode = landingData?.researchFocus?.shuffleViewMode !== false;
@@ -179,14 +165,9 @@ export function ResearchAreas({ areas }: ResearchAreasProps = {}) {
     } else if (landingData?.researchFocus?.defaultViewMode) {
       setViewMode(landingData.researchFocus.defaultViewMode);
     }
-
-    const shuffled = shuffleArray(STUDY_DOMAINS);
-    setDomains(shuffled);
-    setActiveCard(shuffled[0]);
   }, [
     landingData?.researchFocus?.shuffleViewMode,
     landingData?.researchFocus?.defaultViewMode,
-    shuffleArray,
   ]);
 
   // Interactive shuffle button handler
@@ -196,7 +177,7 @@ export function ResearchAreas({ areas }: ResearchAreasProps = {}) {
     const randomMode = viewModes[Math.floor(Math.random() * viewModes.length)];
     setViewMode(randomMode);
 
-    const shuffled = shuffleArray(STUDY_DOMAINS);
+    const shuffled = shuffleArray(domains);
     setDomains(shuffled);
     setActiveCard(shuffled[0]);
 
@@ -317,9 +298,9 @@ export function ResearchAreas({ areas }: ResearchAreasProps = {}) {
 
             {/* Expanding Horizontal Monolith Deck */}
             <div className="flex flex-col lg:flex-row items-stretch gap-3 sm:gap-4 min-h-[580px] lg:min-h-[620px]">
-              {domains.map((domain) => {
+              {domains.map((domain, idx) => {
                 const Icon = domain.icon;
-                const isExpanded = activeCard.id === domain.id;
+                const isExpanded = activeCard?.id === domain.id || (!activeCard && idx === 0);
 
                 return (
                   <div
