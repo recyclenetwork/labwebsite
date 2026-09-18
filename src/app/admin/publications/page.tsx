@@ -65,7 +65,7 @@ import {
   resolveDoi,
   batchResolveDois
 } from "@/lib/publications/doi-resolver";
-import { SEED_RESEARCH_AREAS, SEED_RESEARCHERS } from "@/lib/projects/seed-data";
+import { getTeamMembers, getCachedTeamMembers } from "@/lib/team/store";
 import { getAllResearchAreas, createResearchArea } from "@/lib/research-areas/store";
 
 interface StagedPublication {
@@ -87,6 +87,7 @@ export default function AdminPublicationsPage() {
 
   // Research Areas dynamic list
   const [allResearchAreas, setAllResearchAreas] = useState(getAllResearchAreas());
+  const [teamMembers, setTeamMembers] = useState(() => getCachedTeamMembers());
   const [showNewAreaForm, setShowNewAreaForm] = useState(false);
   const [newAreaTitle, setNewAreaTitle] = useState("");
   const [newAreaDesc, setNewAreaDesc] = useState("");
@@ -156,8 +157,12 @@ export default function AdminPublicationsPage() {
   const loadData = async () => {
     setIsLoading(true);
     try {
-      const allPubs = await getPublishedPublications({}, true); // include drafts
+      const [allPubs, members] = await Promise.all([
+        getPublishedPublications({}, true), // include drafts
+        getTeamMembers(),
+      ]);
       setPublications(allPubs);
+      if (members && members.length > 0) setTeamMembers(members);
     } catch (err) {
       console.error("Error loading admin publications:", err);
     } finally {
@@ -740,7 +745,7 @@ export default function AdminPublicationsPage() {
                     className={`px-3 py-1 text-xs rounded-xl border outline-none transition ${inputBg}`}
                   >
                     <option value="">-- None (General) --</option>
-                    {SEED_RESEARCH_AREAS.map((area) => (
+                    {allResearchAreas.map((area) => (
                       <option key={area.id} value={area.id}>
                         {area.title}
                       </option>
@@ -1501,7 +1506,7 @@ export default function AdminPublicationsPage() {
                     {/* Quick Lab Member Tags */}
                     <div className="flex flex-wrap items-center gap-1.5 mt-2.5">
                       <span className={`text-[11px] font-semibold ${subText} mr-1`}>Lab Quick-Tags:</span>
-                      {SEED_RESEARCHERS.map((res) => (
+                      {teamMembers.map((res) => (
                         <button
                           key={res.id}
                           type="button"

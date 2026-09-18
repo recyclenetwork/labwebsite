@@ -1,7 +1,8 @@
 import { createClient } from "@/lib/supabase/client";
+import { adminMutate } from "@/lib/supabase/admin-mutate";
 import { PublicationWithRelations, PublicationFormData } from "./types";
 import { getLocalPublications, saveLocalPublications } from "./queries";
-import { SEED_RESEARCH_AREAS, SEED_RESEARCHERS } from "../projects/seed-data";
+import { getAllResearchAreas } from "@/lib/research-areas/store";
 
 /**
  * Generate clean URL-safe slug from title
@@ -58,7 +59,7 @@ export function formatDoi(inputDoi?: string): { doi: string | null; doi_url: str
  * Create a new publication
  */
 export async function createPublication(formData: PublicationFormData): Promise<{ success: boolean; id?: string; error?: string }> {
-  const newId = formData.id || "pub-" + Date.now();
+  let newId = formData.id || "pub-" + Date.now();
   const slug = formData.slug?.trim() || generatePublicationSlug(formData.title);
   const { doi, doi_url } = formatDoi(formData.doi);
 
@@ -88,24 +89,20 @@ export async function createPublication(formData: PublicationFormData): Promise<
     bibtex: formData.bibtex || null,
   };
 
-  // Attempt remote Supabase insert
+  // Attempt remote Supabase insert via server mutation (bypasses RLS)
   try {
-    const supabase = createClient();
-    const { data: created, error } = await (supabase as any)
-      .from("publications")
-      .insert([publicationPayload])
-      .select()
-      .single();
-
-    if (!error && created) {
-      await logPublicationActivity("Publication created", created.id, { title: created.title, doi: created.doi });
+    const res = await adminMutate("publication", "create", { publicationPayload });
+    if (res?.data?.id) {
+      newId = res.data.id;
     }
+    await logPublicationActivity("Publication created", newId, { title: publicationPayload.title, doi: publicationPayload.doi });
   } catch (err) {
-    console.warn("Supabase publication insert fallback to local store:", err);
+    console.warn("Supabase publication insert failed:", err);
   }
 
   // Update local memory and localStorage store
-  const matchedAreas = SEED_RESEARCH_AREAS.filter((a) => formData.research_area_ids?.includes(a.id));
+  const allAreas = getAllResearchAreas();
+  const matchedAreas = allAreas.filter((a) => formData.research_area_ids?.includes(a.id));
   const fullPub: PublicationWithRelations = {
     id: newId,
     ...publicationPayload,
@@ -160,20 +157,20 @@ export async function updatePublication(
     updated_at: new Date().toISOString(),
   };
 
-  // Attempt remote Supabase update
+  // Attempt remote Supabase update via server mutation (bypasses RLS)
   try {
-    const supabase = createClient();
-    await (supabase as any).from("publications").update(publicationPayload).eq("id", id);
+    await adminMutate("publication", "update", { publicationPayload }, id);
     await logPublicationActivity("Publication updated", id, { title: formData.title });
   } catch (err) {
-    console.warn("Supabase publication update fallback to local store:", err);
+    console.warn("Supabase publication update failed:", err);
   }
 
   // Update local storage
   const currentList = getLocalPublications();
   const existing = currentList.find((p) => p.id === id);
+  const allAreas = getAllResearchAreas();
   const matchedAreas = formData.research_area_ids?.length
-    ? SEED_RESEARCH_AREAS.filter((a) => formData.research_area_ids?.includes(a.id))
+    ? allAreas.filter((a) => formData.research_area_ids?.includes(a.id))
     : existing?.research_areas || [];
 
   const updatedList = currentList.map((p) => {
@@ -200,11 +197,10 @@ export async function updatePublication(
  */
 export async function deletePublication(id: string): Promise<{ success: boolean; error?: string }> {
   try {
-    const supabase = createClient();
-    await (supabase as any).from("publications").delete().eq("id", id);
+    await adminMutate("publication", "delete", undefined, id);
     await logPublicationActivity("Publication deleted", id);
   } catch (err) {
-    console.warn("Supabase publication delete fallback to local store:", err);
+    console.warn("Supabase publication delete failed:", err);
   }
 
   const currentList = getLocalPublications();
@@ -217,8 +213,7 @@ export async function deletePublication(id: string): Promise<{ success: boolean;
  */
 export async function togglePublicationFeatured(id: string, is_featured: boolean): Promise<boolean> {
   try {
-    const supabase = createClient();
-    await (supabase as any).from("publications").update({ is_featured }).eq("id", id);
+    await adminMutate("publication", "toggle_featured", { is_featured }, id);
   } catch {
     // ignore
   }
@@ -234,8 +229,7 @@ export async function togglePublicationFeatured(id: string, is_featured: boolean
  */
 export async function togglePublicationPublish(id: string, is_published: boolean): Promise<boolean> {
   try {
-    const supabase = createClient();
-    await (supabase as any).from("publications").update({ is_published }).eq("id", id);
+    await adminMutate("publication", "toggle_publish", { is_published }, id);
   } catch {
     // ignore
   }
@@ -299,7 +293,8 @@ export async function batchCreatePublications(
 
     payloads.push(publicationPayload);
 
-    const matchedAreas = SEED_RESEARCH_AREAS.filter((a) => formData.research_area_ids?.includes(a.id));
+    const allAreas = getAllResearchAreas();
+    const matchedAreas = allAreas.filter((a) => formData.research_area_ids?.includes(a.id));
     const fullPub: PublicationWithRelations = {
       id: newId,
       ...publicationPayload,
@@ -315,21 +310,16 @@ export async function batchCreatePublications(
     newPubs.push(fullPub);
   }
 
-  // Attempt remote Supabase batch insert
+  // Attempt remote Supabase batch insert via server mutation
   try {
-    const supabase = createClient();
-    const { error } = await (supabase as any)
-      .from("publications")
-      .insert(payloads);
-
-    if (error) {
-      console.warn("Supabase batch insert error, falling back to local store:", error);
-      errors.push(error.message);
+    const res = await adminMutate("publication", "batch_create", { payloads });
+    if (!res?.success && res?.error) {
+      errors.push(res.error);
     } else {
       await logPublicationActivity("Batch publications created", "batch", { count: payloads.length });
     }
   } catch (err: any) {
-    console.warn("Supabase batch insert exception, saving locally:", err);
+    console.warn("Supabase batch insert exception:", err);
   }
 
   // Update local store

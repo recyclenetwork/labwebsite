@@ -1,7 +1,8 @@
 import { createClient } from "@/lib/supabase/client";
+import { adminMutate } from "@/lib/supabase/admin-mutate";
 import { ProjectFormData, ProjectStatus, ProjectWithRelations } from "./types";
 import { getLocalProjects, saveLocalProjects } from "./queries";
-import { SEED_RESEARCH_AREAS, SEED_RESEARCHERS } from "./seed-data";
+import { getCachedTeamMembers } from "@/lib/team/store";
 import { getAllResearchAreas } from "@/lib/research-areas/store";
 
 /**
@@ -61,7 +62,7 @@ export async function logProjectActivity(
 export async function createProject(formData: ProjectFormData): Promise<ProjectWithRelations> {
   const supabase = createClient();
   const slug = formData.slug || formData.title.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
-  const newId = formData.id || `proj-${Date.now()}`;
+  let newId = formData.id || `proj-${Date.now()}`;
 
   const projectPayload = {
     title: formData.title,
@@ -92,64 +93,32 @@ export async function createProject(formData: ProjectFormData): Promise<ProjectW
     published_at: formData.is_published ? new Date().toISOString() : null,
   };
 
-  // Attempt remote Supabase insert
+  // Attempt server mutation via adminMutate (bypasses RLS)
   try {
-    const { data: created, error } = await (supabase as any)
-      .from("projects")
-      .insert([projectPayload])
-      .select()
-      .single();
-
-    if (!error && created) {
-      // Insert research area junctions
-      if (formData.research_area_ids?.length) {
-        const areaRows = formData.research_area_ids.map((areaId) => ({
-          project_id: created.id,
-          research_area_id: areaId,
-        }));
-        await (supabase as any).from("project_research_areas").insert(areaRows);
-      }
-
-      // Insert researcher junctions
-      if (formData.researcher_assignments?.length) {
-        const researcherRows = formData.researcher_assignments.map((ra, idx) => ({
-          project_id: created.id,
-          person_id: ra.person_id,
-          role_in_project: ra.role_in_project,
-          display_order: idx + 1,
-        }));
-        await (supabase as any).from("project_researchers").insert(researcherRows);
-      }
-
-      // Insert collaborators
-      if (formData.collaborators?.length) {
-        const collabRows = formData.collaborators.map((c, idx) => ({
-          project_id: created.id,
-          name: c.name,
-          institution: c.institution,
-          role: c.role || "Collaborator",
-          display_order: idx + 1,
-        }));
-        await (supabase as any).from("project_collaborators").insert(collabRows);
-      }
-
-      await logProjectActivity("Project created", created.id, { title: created.title, slug: created.slug });
+    const res = await adminMutate("project", "create", {
+      projectPayload,
+      research_area_ids: formData.research_area_ids,
+      researcher_assignments: formData.researcher_assignments,
+      collaborators: formData.collaborators,
+    });
+    if (res?.data?.id) {
+      newId = res.data.id;
     }
   } catch (err) {
-    console.warn("Supabase project insert failed, fallback to local store:", err);
+    console.warn("Project server mutation error:", err);
   }
 
   // Update local memory and localStorage store
   const allAreas = getAllResearchAreas();
   const matchedAreas = allAreas.filter((a) => formData.research_area_ids.includes(a.id));
   const matchedResearchers = formData.researcher_assignments.map((ra) => {
-    const found = SEED_RESEARCHERS.find((p) => p.id === ra.person_id);
+    const found = getCachedTeamMembers().find((p) => p.id === ra.person_id);
     return {
       id: ra.person_id,
       name: found?.name || "Researcher",
       slug: found?.slug || "researcher",
-      position: found?.position || "Researcher",
-      photo_url: found?.photo_url || null,
+      position: found?.role || "Researcher",
+      photo_url: found?.imageSrc || null,
       role_in_project: ra.role_in_project,
     };
   });
@@ -218,10 +187,20 @@ export async function updateProject(
   }
 
   try {
-    await (supabase as any).from("projects").update(updatePayload).eq("id", id);
+    await adminMutate(
+      "project",
+      "update",
+      {
+        updatePayload,
+        research_area_ids: formData.research_area_ids,
+        researcher_assignments: formData.researcher_assignments,
+        collaborators: formData.collaborators,
+      },
+      id
+    );
     await logProjectActivity("Project updated", id, { fields: Object.keys(updatePayload) });
   } catch (err) {
-    console.warn("Supabase project update failed, updating local store:", err);
+    console.warn("Supabase project update failed:", err);
   }
 
   // Update local memory and storage
@@ -230,13 +209,13 @@ export async function updateProject(
   if (index !== -1) {
     const matchedResearchers = formData.researcher_assignments
       ? formData.researcher_assignments.map((ra) => {
-          const found = SEED_RESEARCHERS.find((p) => p.id === ra.person_id);
+          const found = getCachedTeamMembers().find((p) => p.id === ra.person_id);
           return {
             id: ra.person_id,
             name: found?.name || "Researcher",
             slug: found?.slug || "researcher",
-            position: found?.position || "Researcher",
-            photo_url: found?.photo_url || null,
+            position: found?.role || "Researcher",
+            photo_url: found?.imageSrc || null,
             role_in_project: ra.role_in_project,
           };
         })
@@ -264,19 +243,12 @@ export async function updateProject(
  * Delete a project
  */
 export async function deleteProject(id: string): Promise<boolean> {
-  const supabase = createClient();
   try {
-    const { error } = await (supabase as any).from("projects").delete().eq("id", id);
-    if (error) {
-      console.warn("Supabase delete restricted, removing locally:", error.message);
-    }
-  } catch (err) {
-    console.warn("Supabase delete failed, removing locally:", err);
-  }
-
-  try {
+    await adminMutate("project", "delete", undefined, id);
     await logProjectActivity("Project deleted", id);
-  } catch {}
+  } catch (err) {
+    console.warn("Supabase delete failed:", err);
+  }
 
   const existing = getLocalProjects();
   saveLocalProjects(existing.filter((p) => p.id !== id));

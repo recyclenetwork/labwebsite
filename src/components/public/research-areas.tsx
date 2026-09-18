@@ -88,25 +88,13 @@ interface ResearchAreasProps {
 export function ResearchAreas({ areas }: ResearchAreasProps = {}) {
   const { data: landingData } = useLandingData();
   const [viewMode, setViewMode] = React.useState<"deck" | "radial" | "grid">("deck");
-  const [domains, setDomains] = React.useState<StudyDomain[]>(() => {
-    if (typeof window !== "undefined") {
-      const stored = getStoredResearchPillars();
-      if (stored && stored.length > 0) {
-        return stored.map(mapPillarToDomain);
-      }
-    }
-    return DEFAULT_RESEARCH_PILLARS.map(mapPillarToDomain);
-  });
+  const [domains, setDomains] = React.useState<StudyDomain[]>(() =>
+    DEFAULT_RESEARCH_PILLARS.map(mapPillarToDomain)
+  );
 
-  const [activeCard, setActiveCard] = React.useState<StudyDomain>(() => {
-    if (typeof window !== "undefined") {
-      const stored = getStoredResearchPillars();
-      if (stored && stored.length > 0) {
-        return mapPillarToDomain(stored[0], 0);
-      }
-    }
-    return mapPillarToDomain(DEFAULT_RESEARCH_PILLARS[0], 0);
-  });
+  const [activeCard, setActiveCard] = React.useState<StudyDomain>(() =>
+    mapPillarToDomain(DEFAULT_RESEARCH_PILLARS[0], 0)
+  );
 
   const [isHovering, setIsHovering] = React.useState(false);
   const [isShuffling, setIsShuffling] = React.useState(false);
@@ -139,6 +127,17 @@ export function ResearchAreas({ areas }: ResearchAreasProps = {}) {
   }, []);
 
   React.useEffect(() => {
+    // Sync with client-side cache immediately on mount to prevent SSR mismatch
+    const stored = getStoredResearchPillars();
+    if (stored && stored.length > 0) {
+      const mapped = stored.map(mapPillarToDomain);
+      setDomains(mapped);
+      setActiveCard((prev) => {
+        const match = mapped.find((m) => m.id === prev?.id);
+        return match || mapped[0];
+      });
+    }
+
     loadPillars();
 
     const handleUpdate = () => {

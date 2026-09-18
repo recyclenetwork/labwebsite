@@ -13,7 +13,6 @@ import {
   safeLocalStorageGet,
   safeLocalStorageSet,
 } from "@/lib/storage/idb-storage";
-import { getAllResearchAreas } from "@/lib/research-areas/store";
 
 function getQueryClient() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL || "https://ztgwpyoztzpvqnwoixuy.supabase.co";
@@ -28,38 +27,80 @@ function getQueryClient() {
 
 const STORAGE_KEY = "ecotox_lab_projects_v2";
 
-// In-memory / client-side cache state — starts empty, populated from Supabase or local cache
+// Helper to filter out any mock / demo projects entirely
+export function cleanProjectList(projects: any[]): ProjectWithRelations[] {
+  if (!Array.isArray(projects)) return [];
+  return projects.filter((p) => {
+    if (!p || typeof p !== "object") return false;
+    const id = String(p.id || "");
+    const title = String(p.title || "");
+    const funding = String(p.funding_info || "");
+
+    // Purge known mock/seed IDs
+    if (
+      id.startsWith("proj-00") ||
+      ["proj-1", "proj-2", "proj-3", "proj-4", "proj-5", "proj-6"].includes(id) ||
+      id === "proj-0"
+    ) {
+      return false;
+    }
+
+    // Purge known mock project titles / grants
+    if (
+      title.includes("Microplastic Exposure in Freshwater") ||
+      title.includes("Engineered Biochar Composites") ||
+      title.includes("Arsenic Speciation & Bioaccumulation") ||
+      title.includes("Pesticide Runoff Dynamics") ||
+      title.includes("PFAS Bioaccumulation") ||
+      title.includes("Atmospheric Particulate Heavy Metal") ||
+      funding.includes("MoST-ENV-2024-88") ||
+      funding.includes("UGC-EST-23")
+    ) {
+      return false;
+    }
+
+    return true;
+  });
+}
+
+// In-memory / client-side cache state — starts empty, populated strictly from Supabase or real user input
 let memoryProjects: ProjectWithRelations[] = [];
 
 export function getLocalProjects(): ProjectWithRelations[] {
-  if (typeof window === "undefined") return memoryProjects;
+  if (typeof window === "undefined") return cleanProjectList(memoryProjects);
   try {
     const raw = localStorage.getItem(STORAGE_KEY) || localStorage.getItem("lab_projects_store");
     if (raw) {
       const parsed = JSON.parse(raw);
       if (Array.isArray(parsed)) {
-        memoryProjects = parsed;
-        return parsed;
+        const cleaned = cleanProjectList(parsed);
+        if (cleaned.length !== parsed.length) {
+          saveLocalProjects(cleaned, false);
+        }
+        memoryProjects = cleaned;
+        return cleaned;
       }
     }
   } catch {
     // ignore
   }
 
-  return memoryProjects;
+  return cleanProjectList(memoryProjects);
 }
 
-export function saveLocalProjects(projects: ProjectWithRelations[]): void {
-  memoryProjects = projects;
+export function saveLocalProjects(projects: ProjectWithRelations[], dispatchUpdate: boolean = true): void {
+  const cleaned = cleanProjectList(projects);
+  memoryProjects = cleaned;
   if (typeof window !== "undefined") {
     try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(projects));
-      localStorage.setItem("lab_projects_store", JSON.stringify(projects));
-      safeLocalStorageSet(STORAGE_KEY, projects);
-      safeLocalStorageSet("lab_projects_store", projects);
-      idbSet(STORAGE_KEY, projects).catch(() => {});
-      window.dispatchEvent(new CustomEvent("lab_projects_updated", { detail: projects }));
-      window.dispatchEvent(new Event("storage"));
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(cleaned));
+      localStorage.setItem("lab_projects_store", JSON.stringify(cleaned));
+      safeLocalStorageSet(STORAGE_KEY, cleaned);
+      safeLocalStorageSet("lab_projects_store", cleaned);
+      idbSet(STORAGE_KEY, cleaned).catch(() => {});
+      if (dispatchUpdate) {
+        window.dispatchEvent(new CustomEvent("lab_projects_updated", { detail: cleaned }));
+      }
     } catch {
       // ignore
     }
@@ -80,9 +121,9 @@ export async function getResearchAreas(): Promise<ProjectResearchArea[]> {
     if (!error && data && data.length > 0) {
       return data as ProjectResearchArea[];
     }
-    return getAllResearchAreas();
+    return [];
   } catch {
-    return getAllResearchAreas();
+    return [];
   }
 }
 
@@ -149,11 +190,12 @@ export async function getPublishedProjects(
     const { data, error } = await query;
 
     if (error) {
-      // Fallback to local memory cache on network/table error
+      console.warn("Supabase projects query notice:", error.message);
       return filterLocalProjects(getLocalProjects(), filters, includeDrafts);
     }
 
     if (!data || data.length === 0) {
+      saveLocalProjects([], false);
       return [];
     }
 
@@ -198,13 +240,11 @@ export async function getPublishedProjects(
       publications: (row.publication_projects || []).map((pp: any) => pp.publications).filter(Boolean),
     }));
 
-    if (formatted && formatted.length > 0) {
-      return filterLocalProjects(formatted, filters, includeDrafts);
-    }
-
-    return filterLocalProjects(getLocalProjects(), filters, includeDrafts);
+    const cleaned = cleanProjectList(formatted);
+    saveLocalProjects(cleaned, false);
+    return filterLocalProjects(cleaned, filters, includeDrafts);
   } catch {
-    return filterLocalProjects(getLocalProjects(), filters, includeDrafts);
+    return [];
   }
 }
 

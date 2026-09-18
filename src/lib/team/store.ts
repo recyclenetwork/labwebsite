@@ -1,15 +1,31 @@
 import { TeamMember, TeamCategory } from "./types";
-import { INITIAL_TEAM_MEMBERS } from "./seed-data";
 import { createClient } from "@/lib/supabase/client";
+import { adminMutate } from "@/lib/supabase/admin-mutate";
 import { idbGet, idbSet, idbDelete, safeLocalStorageSet, safeLocalStorageGet } from "@/lib/storage/idb-storage";
 
 const LOCAL_STORAGE_KEY = "ecotox_lab_team_members_v1";
+
+export function cleanTeamList(items: any[]): TeamMember[] {
+  if (!Array.isArray(items)) return [];
+  return items.filter((m) => {
+    if (!m || typeof m !== "object") return false;
+    const id = String(m.id || "");
+    if (["person-1", "person-2", "person-3", "person-4", "person-5", "member-1", "member-2"].includes(id)) {
+      return false;
+    }
+    return true;
+  });
+}
 
 export function getCachedTeamMembers(): TeamMember[] {
   if (typeof window !== "undefined") {
     const cached = safeLocalStorageGet<TeamMember[]>(LOCAL_STORAGE_KEY);
     if (Array.isArray(cached)) {
-      return cached;
+      const cleaned = cleanTeamList(cached);
+      if (cleaned.length !== cached.length) {
+        safeLocalStorageSet(LOCAL_STORAGE_KEY, cleaned);
+      }
+      return cleaned;
     }
   }
   return [];
@@ -34,45 +50,43 @@ export async function getTeamMembers(): Promise<TeamMember[]> {
       .select("*")
       .order("order_index", { ascending: true });
 
-    if (!error && data && data.length > 0) {
-      const mapped: TeamMember[] = data.map((row: any) => ({
+    if (!error && Array.isArray(data)) {
+      if (data.length === 0) {
+        if (typeof window !== "undefined") {
+          await idbSet(LOCAL_STORAGE_KEY, []);
+          safeLocalStorageSet(LOCAL_STORAGE_KEY, []);
+        }
+        return [];
+      }
+
+      const mapped: TeamMember[] = cleanTeamList(data.map((row: any) => ({
         id: row.id,
         name: row.name,
         slug: row.slug || row.name.toLowerCase().replace(/[^a-z0-9]+/g, "-"),
-        role: row.role || row.designation || "Researcher",
-        category: (row.category as TeamCategory) || "graduate",
+        role: row.role || row.position || "",
+        position: row.position || row.role || "",
+        designation: row.designation || "",
+        category: row.category || "researcher",
         department: row.department || "Department of Environmental Sciences",
         affiliation: row.affiliation || "Jahangirnagar University",
-        bio: row.bio || "",
+        email: row.email || "",
+        bio: row.bio || row.biography || "",
+        quote: row.quote || "",
         researchInterests: Array.isArray(row.research_interests)
           ? row.research_interests
-          : row.research_interests ? row.research_interests.split(",") : [],
-        education: Array.isArray(row.education) ? row.education : [],
-        email: row.email || "",
-        phone: row.phone || "",
-        officeLocation: row.office_location || "",
-        googleScholarUrl: row.google_scholar_url || "",
-        orcid: row.orcid || "",
-        researchGateUrl: row.researchgate_url || "",
-        linkedinUrl: row.linkedin_url || "",
-        websiteUrl: row.website_url || "",
-        imageSrc: row.image_url || row.image_src || row.photo_url || "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=600&q=80",
-        quote: row.quote || "",
-        publicationsCount: row.publications_count,
-        citationsCount: row.citations_count,
-        hIndex: row.h_index,
-        grantsCount: row.grants_count,
-        advisingCount: row.advising_count,
-        thesisTopic: row.thesis_topic || "",
-        advisor: row.advisor || "",
-        expectedGraduation: row.expected_graduation || "",
-        currentPosition: row.current_position || "",
+          : row.research_interests ? String(row.research_interests).split(",") : [],
+        imageSrc: row.photo_url || row.image_url || "/images/slide-2-lab.jpg",
+        imageAlt: row.name,
+        publicationsCount: row.publications_count || "0",
+        citationsCount: row.citations_count || "0",
+        hIndex: row.h_index || "0",
+        grantsCount: row.grants_count || "0",
         currentInstitution: row.current_institution || "",
         alumniYear: row.alumni_year || "",
         pastRole: row.past_role || "",
         orderIndex: row.order_index || 0,
         isActive: row.is_active ?? true,
-      }));
+      })));
 
       // Cache locally
       await idbSet(LOCAL_STORAGE_KEY, mapped);
@@ -88,7 +102,8 @@ export async function getTeamMembers(): Promise<TeamMember[]> {
     try {
       const idbData = await idbGet<TeamMember[]>(LOCAL_STORAGE_KEY);
       if (Array.isArray(idbData) && idbData.length > 0) {
-        return idbData;
+        const cleaned = cleanTeamList(idbData);
+        return cleaned;
       }
     } catch (e) {
       console.warn("IndexedDB read error:", e);
@@ -97,9 +112,9 @@ export async function getTeamMembers(): Promise<TeamMember[]> {
     // 3. Check localStorage in browser
     const cached = safeLocalStorageGet<TeamMember[]>(LOCAL_STORAGE_KEY);
     if (Array.isArray(cached) && cached.length > 0) {
-      // Migrate to IndexedDB
-      await idbSet(LOCAL_STORAGE_KEY, cached);
-      return cached;
+      const cleaned = cleanTeamList(cached);
+      await idbSet(LOCAL_STORAGE_KEY, cleaned);
+      return cleaned;
     }
   }
 
@@ -224,11 +239,7 @@ export async function saveTeamMember(member: Partial<TeamMember>): Promise<TeamM
       payload.id = completeMember.id;
     }
 
-    if (isNew) {
-      await (supabase as any).from("people").insert([payload]);
-    } else {
-      await (supabase as any).from("people").update(payload).eq("id", completeMember.id);
-    }
+    await adminMutate("person", "upsert", { personPayload: payload });
   } catch (err) {
     console.warn("Supabase team save sync warning:", err);
   }
@@ -279,10 +290,9 @@ export async function deleteTeamMember(id: string): Promise<boolean> {
   }
 
   try {
-    const supabase = createClient();
-    await (supabase as any).from("people").delete().eq("id", id);
+    await adminMutate("person", "delete", undefined, id);
   } catch (err) {
-    // Ignore
+    console.warn("Supabase team delete warning:", err);
   }
 
   return true;

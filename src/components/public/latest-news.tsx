@@ -38,11 +38,9 @@ export function LatestNews({ news: initialNews }: LatestNewsProps) {
     };
 
     window.addEventListener("lab_news_updated", handleNewsUpdate);
-    window.addEventListener("storage", handleNewsUpdate);
 
     return () => {
       window.removeEventListener("lab_news_updated", handleNewsUpdate);
-      window.removeEventListener("storage", handleNewsUpdate);
     };
   }, [fetchNews]);
 

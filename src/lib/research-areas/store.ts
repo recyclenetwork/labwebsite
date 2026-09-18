@@ -1,5 +1,6 @@
 import { ProjectResearchArea } from "@/lib/projects/types";
 import { createClient } from "@/lib/supabase/client";
+import { adminMutate } from "@/lib/supabase/admin-mutate";
 import { idbGet, idbSet, safeLocalStorageGet, safeLocalStorageSet } from "@/lib/storage/idb-storage";
 
 export interface ResearchPillar {
@@ -210,8 +211,8 @@ export async function fetchResearchPillarsAsync(): Promise<ResearchPillar[]> {
     return stored;
   }
 
-  // 4. Default seed template if brand new installation
-  return DEFAULT_RESEARCH_PILLARS;
+  // 4. Return empty — no hardcoded seed data fallback for public-facing pages
+  return [];
 }
 
 /**
@@ -223,13 +224,11 @@ export async function saveAllResearchPillars(pillars: ResearchPillar[]): Promise
     await idbSet(LOCAL_STORAGE_KEY, pillars);
     safeLocalStorageSet(LOCAL_STORAGE_KEY, pillars);
 
-    // Sync to Supabase site_settings
+    // Sync to Supabase site_settings via server mutation (bypasses RLS)
     try {
-      const supabase = createClient();
-      await (supabase as any).from("site_settings").upsert({
+      await adminMutate("site_setting", "upsert", {
         key: "research_pillars",
         value: pillars,
-        updated_at: new Date().toISOString(),
       });
     } catch (syncErr) {
       console.warn("Supabase research pillars sync warning:", syncErr);
@@ -308,7 +307,7 @@ export function getDefaultResearchPillars(): ResearchPillar[] {
 
 // Backward-compatibility exports for existing project/publications modules
 export function getAllResearchAreas(): ProjectResearchArea[] {
-  const stored = getStoredResearchPillars() || DEFAULT_RESEARCH_PILLARS;
+  const stored = getStoredResearchPillars() || [];
   return stored.map((p) => ({
     id: p.id,
     title: p.title,

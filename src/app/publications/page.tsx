@@ -39,11 +39,14 @@ import { Navbar } from "@/components/public/navbar";
 import { Footer } from "@/components/public/footer";
 import { PublicationWithRelations, PublicationType } from "@/lib/publications/types";
 import { getPublishedPublications, getPublicationStats, getAvailableYears } from "@/lib/publications/queries";
-import { SEED_RESEARCH_AREAS, SEED_RESEARCHERS } from "@/lib/projects/seed-data";
+import { getAllResearchAreas } from "@/lib/research-areas/store";
+import { getTeamMembers, getCachedTeamMembers } from "@/lib/team/store";
 
 export default function PublicationsPage() {
   const [publications, setPublications] = useState<PublicationWithRelations[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [researchAreas, setResearchAreas] = useState<any[]>(() => getAllResearchAreas());
+  const [teamMembers, setTeamMembers] = useState<any[]>(() => getCachedTeamMembers());
   const [stats, setStats] = useState({
     totalPublications: 0,
     totalCitations: 0,
@@ -82,12 +85,16 @@ export default function PublicationsPage() {
   const loadData = async () => {
     setIsLoading(true);
     try {
-      const [pubs, statData] = await Promise.all([
+      const [pubs, statData, areas, members] = await Promise.all([
         getPublishedPublications({}, false),
         getPublicationStats(),
+        Promise.resolve(getAllResearchAreas()),
+        getTeamMembers(),
       ]);
       setPublications(pubs);
       setStats(statData);
+      if (areas && areas.length > 0) setResearchAreas(areas);
+      if (members && members.length > 0) setTeamMembers(members);
     } catch (err) {
       console.error("Error loading publications:", err);
     } finally {
@@ -597,7 +604,7 @@ export default function PublicationsPage() {
                       <span className="font-mono text-[11px] opacity-75">{publications.length}</span>
                     </button>
 
-                    {SEED_RESEARCH_AREAS.map((area) => {
+                    {researchAreas.map((area) => {
                       const isSelected = selectedArea === area.slug;
                       const count = publications.filter((p) =>
                         p.research_areas?.some((a) => a.slug === area.slug || a.id === area.id)
@@ -702,7 +709,7 @@ export default function PublicationsPage() {
                       className="w-full pl-3 pr-9 py-2.5 text-xs font-bold rounded-xl bg-slate-50 dark:bg-[#0F172A] border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-slate-100 outline-none focus:border-emerald-600 appearance-none shadow-xs cursor-pointer"
                     >
                       <option value="all">All Lab Authors ({publications.length} Papers)</option>
-                      {SEED_RESEARCHERS.map((res) => {
+                      {teamMembers.map((res) => {
                         const authorPubCount = publications.filter((p) =>
                           (p.authors_text && p.authors_text.toLowerCase().includes(res.name.toLowerCase())) ||
                           p.authors?.some((a) => a.name.toLowerCase().includes(res.name.toLowerCase()))

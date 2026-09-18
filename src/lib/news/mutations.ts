@@ -1,7 +1,8 @@
 import { createClient } from "@/lib/supabase/client";
+import { adminMutate } from "@/lib/supabase/admin-mutate";
 import { NewsArticle, NewsFormData } from "./types";
 import { getLocalNews, saveLocalNews } from "./queries";
-import { SEED_RESEARCH_AREAS, SEED_PROJECTS } from "../projects/seed-data";
+import { getAllResearchAreas } from "@/lib/research-areas/store";
 
 /**
  * Clean URL-safe slug generator
@@ -62,8 +63,9 @@ export async function createNewsArticle(
     ? formData.tags.split(",").map((t) => t.trim()).filter(Boolean)
     : [];
 
-  const matchedAreas = SEED_RESEARCH_AREAS.filter((a) => formData.research_area_ids?.includes(a.id));
-  const matchedProjects = SEED_PROJECTS.filter((p) => formData.project_ids?.includes(p.id));
+  const allAreas = getAllResearchAreas();
+  const matchedAreas = allAreas.filter((a) => formData.research_area_ids?.includes(a.id));
+  const matchedProjects: { id: string; title: string; slug: string }[] = [];
 
   const payload: any = {
     id: newId,
@@ -86,20 +88,15 @@ export async function createNewsArticle(
     tags: tagsArray,
   };
 
-  // Supabase insert attempt
+  // Supabase insert attempt via server mutation (bypasses RLS)
   try {
-    const supabase = createClient();
-    const { data: created, error } = await (supabase as any)
-      .from("news")
-      .insert([payload])
-      .select()
-      .single();
-
-    if (!error && created) {
-      await logNewsActivity("News article created", created.id, { title: created.title });
+    const res = await adminMutate("news", "create", { newsPayload: payload });
+    if (res?.data?.id) {
+      payload.id = res.data.id;
     }
+    await logNewsActivity("News article created", payload.id, { title: payload.title });
   } catch (err) {
-    console.warn("Supabase news insert fallback to local store:", err);
+    console.warn("Supabase news insert failed:", err);
   }
 
   // Local store update
@@ -157,24 +154,22 @@ export async function updateNewsArticle(
     updated_at: new Date().toISOString(),
   };
 
-  // Supabase update attempt
+  // Supabase update attempt via server mutation (bypasses RLS)
   try {
-    const supabase = createClient();
-    await (supabase as any).from("news").update(payload).eq("id", id);
+    await adminMutate("news", "update", { newsPayload: payload }, id);
     await logNewsActivity("News article updated", id, { title: formData.title });
   } catch (err) {
-    console.warn("Supabase news update fallback to local store:", err);
+    console.warn("Supabase news update failed:", err);
   }
 
   // Local storage update
   const currentList = getLocalNews();
   const existing = currentList.find((n) => n.id === id);
+  const allAreas = getAllResearchAreas();
   const matchedAreas = formData.research_area_ids?.length
-    ? SEED_RESEARCH_AREAS.filter((a) => formData.research_area_ids?.includes(a.id))
+    ? allAreas.filter((a) => formData.research_area_ids?.includes(a.id))
     : existing?.research_areas || [];
-  const matchedProjects = formData.project_ids?.length
-    ? SEED_PROJECTS.filter((p) => formData.project_ids?.includes(p.id)).map((p) => ({ id: p.id, title: p.title, slug: p.slug }))
-    : existing?.projects || [];
+  const matchedProjects = existing?.projects || [];
 
   const updatedList = currentList.map((n) => {
     if (n.id === id) {
@@ -197,11 +192,10 @@ export async function updateNewsArticle(
  */
 export async function deleteNewsArticle(id: string): Promise<{ success: boolean; error?: string }> {
   try {
-    const supabase = createClient();
-    await (supabase as any).from("news").delete().eq("id", id);
+    await adminMutate("news", "delete", undefined, id);
     await logNewsActivity("News article deleted", id);
   } catch (err) {
-    console.warn("Supabase news delete fallback to local store:", err);
+    console.warn("Supabase news delete failed:", err);
   }
 
   const currentList = getLocalNews();
@@ -214,8 +208,7 @@ export async function deleteNewsArticle(id: string): Promise<{ success: boolean;
  */
 export async function toggleNewsFeatured(id: string, is_featured: boolean): Promise<boolean> {
   try {
-    const supabase = createClient();
-    await (supabase as any).from("news").update({ is_featured }).eq("id", id);
+    await adminMutate("news", "toggle_featured", { is_featured }, id);
   } catch {
     // ignore
   }
@@ -231,8 +224,7 @@ export async function toggleNewsFeatured(id: string, is_featured: boolean): Prom
  */
 export async function toggleNewsPublished(id: string, is_published: boolean): Promise<boolean> {
   try {
-    const supabase = createClient();
-    await (supabase as any).from("news").update({ is_published }).eq("id", id);
+    await adminMutate("news", "toggle_publish", { is_published }, id);
   } catch {
     // ignore
   }

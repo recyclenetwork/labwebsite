@@ -107,40 +107,42 @@ export function FeaturedProject() {
     });
   }, []);
 
-  const loadAllProjects = React.useCallback(() => {
+  const isFetchingRef = React.useRef(false);
+
+  const loadAllProjects = React.useCallback(async () => {
+    if (isFetchingRef.current) return;
+    isFetchingRef.current = true;
     try {
+      // Prioritize live data from Supabase
+      const remote = await getPublishedProjects({}, false);
+      if (Array.isArray(remote)) {
+        setProjects(formatProjects(remote));
+        return;
+      }
       const local = getLocalProjects();
       setProjects(formatProjects(local || []));
     } catch (e) {
-      console.error("Failed to load local projects:", e);
+      console.error("Failed to load projects:", e);
       setProjects([]);
     } finally {
       setLoading(false);
+      isFetchingRef.current = false;
     }
   }, [formatProjects]);
 
   React.useEffect(() => {
     loadAllProjects();
 
-    // Fetch fresh from Supabase if online
-    getPublishedProjects({}, false).then((remote) => {
-      if (remote) {
-        setProjects(formatProjects(remote));
-      }
-    }).catch(() => {});
-
     const handleUpdate = () => {
       loadAllProjects();
     };
 
     window.addEventListener("lab_projects_updated", handleUpdate);
-    window.addEventListener("storage", handleUpdate);
 
     return () => {
       window.removeEventListener("lab_projects_updated", handleUpdate);
-      window.removeEventListener("storage", handleUpdate);
     };
-  }, [loadAllProjects, formatProjects]);
+  }, [loadAllProjects]);
 
   const visibleCards = windowWidth < 640 ? 1 : windowWidth < 1024 ? 2 : 4;
   const maxIndex = Math.max(0, projects.length - visibleCards);

@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { adminMutate } from "@/lib/supabase/admin-mutate";
 import { idbGet, idbSet, idbDelete, safeLocalStorageSet, safeLocalStorageGet } from "@/lib/storage/idb-storage";
 
 export interface LandingContentData {
@@ -314,72 +315,7 @@ export const DEFAULT_LANDING_DATA: LandingContentData = {
     badge: "INSTITUTIONAL NETWORK",
     title: "Collaborating Institutions & Research Sponsors",
     subtitle: "Partnering with leading ministries, academic councils, and international environmental organizations",
-    partners: [
-      {
-        id: "p-ju",
-        name: "Jahangirnagar University",
-        shortName: "JU Environmental Sciences",
-        type: "Host Academic Institution",
-        badge: "HOST",
-        logoUrl: "",
-      },
-      {
-        id: "p-doe",
-        name: "Department of Environment (DoE)",
-        shortName: "Ministry of Env & Climate",
-        type: "Government Regulatory Partner",
-        badge: "GOVERNMENT",
-        logoUrl: "",
-      },
-      {
-        id: "p-bcsir",
-        name: "BCSIR Research Laboratories",
-        shortName: "National Science Council",
-        type: "Analytical Research Alliance",
-        badge: "ALLIANCE",
-        logoUrl: "",
-      },
-      {
-        id: "p-unep",
-        name: "United Nations Environment (UNEP)",
-        shortName: "UNEP Global Chemicals",
-        type: "International Agency",
-        badge: "GLOBAL",
-        logoUrl: "",
-      },
-      {
-        id: "p-who",
-        name: "World Health Organization",
-        shortName: "WHO Environmental Health",
-        type: "Health Risk Working Group",
-        badge: "GLOBAL",
-        logoUrl: "",
-      },
-      {
-        id: "p-jica",
-        name: "JICA Environmental Science",
-        shortName: "Japan International Agency",
-        type: "Bilateral Grant Sponsor",
-        badge: "GRANT SPONSOR",
-        logoUrl: "",
-      },
-      {
-        id: "p-icimod",
-        name: "ICIMOD Watershed Network",
-        shortName: "Regional Mountain & River Alliance",
-        type: "Regional Ecological Partner",
-        badge: "REGIONAL",
-        logoUrl: "",
-      },
-      {
-        id: "p-nsf",
-        name: "Global Toxicology Research Network",
-        shortName: "International Science Consortium",
-        type: "Joint Grant Consortium",
-        badge: "CONSORTIUM",
-        logoUrl: "",
-      },
-    ],
+    partners: [],
   },
   publicationsSection: {
     badge: "PEER-REVIEWED EVIDENCE",
@@ -633,6 +569,18 @@ export function sanitizeLandingData(data: LandingContentData): LandingContentDat
     };
   }
 
+  // Sanitize partners: purge legacy mock/placeholder entries without valid uploaded logos
+  if (sanitized.partnersSection && Array.isArray(sanitized.partnersSection.partners)) {
+    sanitized.partnersSection = {
+      ...sanitized.partnersSection,
+      partners: sanitized.partnersSection.partners.filter((p) => {
+        const isMockId = ["p-ju", "p-doe", "p-bcsir", "p-unep", "p-who", "p-jica", "p-icimod", "p-nsf"].includes(p.id);
+        const hasLogo = Boolean(p.logoUrl && p.logoUrl.trim());
+        return !isMockId && hasLogo;
+      }),
+    };
+  }
+
   return sanitized;
 }
 
@@ -700,13 +648,11 @@ export async function saveLandingDataAsync(data: LandingContentData): Promise<bo
     // 2. Mirror into localStorage safely without throwing QuotaExceededError
     safeLocalStorageSet(STORAGE_KEY, sanitized);
 
-    // 3. Sync to Supabase site_settings
+    // 3. Sync to Supabase site_settings via server mutation (bypasses RLS)
     try {
-      const supabase = createClient();
-      await (supabase as any).from("site_settings").upsert({
+      await adminMutate("site_setting", "upsert", {
         key: "landing_content",
         value: sanitized,
-        updated_at: new Date().toISOString(),
       });
     } catch (syncErr) {
       console.warn("Supabase landing content sync warning:", syncErr);
@@ -727,19 +673,13 @@ export function saveLandingData(data: LandingContentData): boolean {
     idbSet(STORAGE_KEY, sanitized).catch((err) => console.warn("IDB landing save error:", err));
     safeLocalStorageSet(STORAGE_KEY, sanitized);
 
-    // Sync in background to Supabase
-    try {
-      const supabase = createClient();
-      (supabase as any)
-        .from("site_settings")
-        .upsert({
-          key: "landing_content",
-          value: sanitized,
-          updated_at: new Date().toISOString(),
-        })
-        .then(() => { })
-        .catch((err: any) => console.warn("Background Supabase save warning:", err));
-    } catch { }
+    // Sync in background to Supabase via server mutation (bypasses RLS)
+    adminMutate("site_setting", "upsert", {
+      key: "landing_content",
+      value: sanitized,
+    }).catch((syncErr) => {
+      console.warn("Supabase landing content sync warning:", syncErr);
+    });
 
     window.dispatchEvent(new Event("landing-content-updated"));
     return true;

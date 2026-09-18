@@ -48,7 +48,6 @@ import {
   toggleNewsPublished
 } from "@/lib/news/mutations";
 import { NEWS_CATEGORIES_META } from "@/lib/news/seed-data";
-import { SEED_RESEARCH_AREAS, SEED_PROJECTS, SEED_RESEARCHERS } from "@/lib/projects/seed-data";
 import { getAllResearchAreas, createResearchArea } from "@/lib/research-areas/store";
 
 export default function AdminNewsPage() {

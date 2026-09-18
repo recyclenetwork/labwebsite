@@ -50,7 +50,6 @@ import {
   toggleProjectFeatured,
   uploadProjectMedia,
 } from "@/lib/projects/mutations";
-import { SEED_RESEARCH_AREAS, SEED_RESEARCHERS } from "@/lib/projects/seed-data";
 import {
   getAllResearchAreas,
   createResearchArea,
@@ -140,22 +139,15 @@ export default function AdminProjectsPage() {
 
   const [formData, setFormData] = useState<ProjectFormData>(initialFormState);
 
-  // Dynamically combined researchers list (prefer real team roster + fallback seed)
+  // Dynamically mapped researchers list from real team roster
   const combinedResearchers = React.useMemo(() => {
-    if (teamResearchers.length === 0) {
-      return SEED_RESEARCHERS;
-    }
-    const teamMapped = teamResearchers.map((m) => ({
+    return teamResearchers.map((m) => ({
       id: m.id,
       name: m.name,
       slug: m.slug,
       position: m.role || "Researcher",
       photo_url: m.imageSrc || null,
     }));
-    // include any seed researchers that might be referenced in older records
-    const teamIds = new Set(teamMapped.map((t) => t.id));
-    const missingSeeds = SEED_RESEARCHERS.filter((s) => !teamIds.has(s.id));
-    return [...teamMapped, ...missingSeeds];
   }, [teamResearchers]);
 
   // Load Projects & Team from DB / Access layer
@@ -220,9 +212,9 @@ export default function AdminProjectsPage() {
     setFormData({
       ...initialFormState,
       research_area_ids: researchAreas.length > 0 ? [researchAreas[0].id] : [],
-      researcher_assignments: [
-        { person_id: SEED_RESEARCHERS[0].id, role_in_project: "Principal Investigator" },
-      ],
+      researcher_assignments: teamResearchers.length > 0
+        ? [{ person_id: teamResearchers[0].id, role_in_project: "Principal Investigator" }]
+        : [],
       collaborators: [
         { name: "Jahangirnagar University", institution: "Dept. of Environmental Sciences", role: "Academic Host" },
       ],

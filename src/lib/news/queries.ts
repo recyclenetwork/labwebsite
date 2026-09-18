@@ -4,6 +4,29 @@ import { idbGet, idbSet, safeLocalStorageGet, safeLocalStorageSet } from "@/lib/
 
 const LOCAL_STORAGE_KEY = "lab_news_articles_override_v2";
 
+export function cleanNewsList(items: any[]): NewsArticle[] {
+  if (!Array.isArray(items)) return [];
+  return items.filter((n) => {
+    if (!n || typeof n !== "object") return false;
+    const id = String(n.id || "");
+    const title = String(n.title || "");
+    if (
+      id.startsWith("news-00") ||
+      ["news-1", "news-2", "news-3", "news-4", "news-5", "news-6"].includes(id)
+    ) {
+      return false;
+    }
+    if (
+      title.includes("Lab Director Delivers Keynote") ||
+      title.includes("Research Team Discovers Elevated") ||
+      title.includes("Department Expands Ultra-Trace")
+    ) {
+      return false;
+    }
+    return true;
+  });
+}
+
 /**
  * Get local in-browser news override storage
  */
@@ -12,7 +35,11 @@ export function getLocalNews(): NewsArticle[] {
   try {
     const cached = safeLocalStorageGet<NewsArticle[]>(LOCAL_STORAGE_KEY);
     if (cached && Array.isArray(cached)) {
-      return cached;
+      const cleaned = cleanNewsList(cached);
+      if (cleaned.length !== cached.length) {
+        saveLocalNews(cleaned, false);
+      }
+      return cleaned;
     }
     return [];
   } catch {
@@ -20,12 +47,15 @@ export function getLocalNews(): NewsArticle[] {
   }
 }
 
-export function saveLocalNews(items: NewsArticle[]) {
+export function saveLocalNews(items: NewsArticle[], dispatchUpdate: boolean = true) {
   if (typeof window === "undefined") return;
   try {
-    idbSet(LOCAL_STORAGE_KEY, items);
-    safeLocalStorageSet(LOCAL_STORAGE_KEY, items);
-    window.dispatchEvent(new Event("lab_news_updated"));
+    const cleaned = cleanNewsList(items);
+    idbSet(LOCAL_STORAGE_KEY, cleaned);
+    safeLocalStorageSet(LOCAL_STORAGE_KEY, cleaned);
+    if (dispatchUpdate) {
+      window.dispatchEvent(new Event("lab_news_updated"));
+    }
   } catch (err) {
     console.error("Failed to save local news articles:", err);
   }
@@ -101,14 +131,18 @@ export async function getPublishedNews(
           updated_at: d.updated_at || new Date().toISOString(),
         };
       });
+      items = cleanNewsList(items);
+      saveLocalNews(items, false);
+    } else if (!error && data && data.length === 0) {
+      items = [];
+      saveLocalNews([], false);
     } else {
-      items = localList;
+      items = cleanNewsList(localList);
     }
 
     return applyFilters(items, filters, includeDrafts);
   } catch (err) {
-    console.warn("Using local news store:", err);
-    return applyFilters(localList, filters, includeDrafts);
+    return applyFilters(cleanNewsList(localList), filters, includeDrafts);
   }
 }
 

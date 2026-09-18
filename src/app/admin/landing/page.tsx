@@ -1207,211 +1207,271 @@ export default function AdminLandingManagerPage() {
             )}
 
             {/* 5. PARTNERS RIBBON */}
-            {activeTab === "partners" && (
-              <div className={`p-6 rounded-2xl border ${cardBg} space-y-6 animate-in fade-in`}>
-                <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-emerald-950/60">
-                  <h3 className={`text-sm font-bold flex items-center gap-2 ${titleText}`}>
-                    <Globe className="w-4 h-4 text-emerald-500" />
-                    Collaborating Institutions &amp; Partners Ribbon
-                  </h3>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      const currentPartners =
-                        formData.partnersSection?.partners ||
-                        DEFAULT_LANDING_DATA.partnersSection.partners ||
-                        [];
-                      const newPartner = {
-                        id: `partner-${Date.now()}`,
-                        name: "Organization Name",
-                        shortName: "",
-                        type: "Partner Organization",
-                        badge: "PARTNER",
-                        logoUrl: "",
-                        websiteUrl: "",
-                      };
-                      setFormData({
-                        ...formData,
-                        partnersSection: {
-                          ...formData.partnersSection,
-                          partners: [...currentPartners, newPartner],
-                        },
-                      });
-                    }}
-                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold shadow-xs transition-all cursor-pointer"
-                  >
-                    <Plus className="w-3.5 h-3.5" />
-                    <span>Add Organization Logo</span>
-                  </button>
-                </div>
+            {/* 5. PARTNERS & COLLABORATORS */}
+            {activeTab === "partners" && (() => {
+              const partnersList = formData.partnersSection?.partners || [];
 
-                {/* Section Header Settings */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div>
-                    <label className={`block text-xs ${labelText} mb-1`}>Top Badge Label</label>
-                    <input
-                      type="text"
-                      value={formData.partnersSection?.badge || "INSTITUTIONAL NETWORK"}
-                      onChange={(e) =>
-                        setFormData({
-                          ...formData,
-                          partnersSection: { ...formData.partnersSection, badge: e.target.value },
-                        })
-                      }
-                      className={`w-full px-3.5 py-2.5 rounded-xl border text-xs outline-none ${inputBg}`}
-                    />
+              const addNewPartner = () => {
+                const newPartner = {
+                  id: `partner-${Date.now()}`,
+                  name: "",
+                  shortName: "",
+                  type: "Partner Organization",
+                  badge: "PARTNER",
+                  logoUrl: "",
+                  websiteUrl: "",
+                };
+                setFormData({
+                  ...formData,
+                  partnersSection: {
+                    ...formData.partnersSection,
+                    partners: [...partnersList, newPartner],
+                  },
+                });
+              };
+
+              return (
+                <div className={`p-6 rounded-2xl border ${cardBg} space-y-6 animate-in fade-in`}>
+                  <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-emerald-950/60">
+                    <div>
+                      <h3 className={`text-sm font-bold flex items-center gap-2 ${titleText}`}>
+                        <Globe className="w-4 h-4 text-emerald-500" />
+                        Collaborating Institutions &amp; Partners Ribbon
+                      </h3>
+                      <p className="text-xs text-slate-400 mt-0.5">
+                        Manage sponsor and partner logos shown in the edge-to-edge marquee ribbon.
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={addNewPartner}
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold shadow-xs transition-all cursor-pointer"
+                    >
+                      <Plus className="w-3.5 h-3.5" />
+                      <span>Add Organization Logo</span>
+                    </button>
                   </div>
-                  <div>
-                    <label className={`block text-xs ${labelText} mb-1`}>Section Heading</label>
-                    <input
-                      type="text"
-                      value={formData.partnersSection?.title || "Collaborating Institutions & Research Sponsors"}
-                      onChange={(e) =>
-                        setFormData({
-                          ...formData,
-                          partnersSection: { ...formData.partnersSection, title: e.target.value },
-                        })
-                      }
-                      className={`w-full px-3.5 py-2.5 rounded-xl border text-xs outline-none ${inputBg}`}
-                    />
+
+                  {/* Section Header Settings */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <label className={`block text-xs ${labelText} mb-1`}>Top Badge Label</label>
+                      <input
+                        type="text"
+                        value={formData.partnersSection?.badge || "INSTITUTIONAL NETWORK"}
+                        onChange={(e) =>
+                          setFormData({
+                            ...formData,
+                            partnersSection: { ...formData.partnersSection, badge: e.target.value },
+                          })
+                        }
+                        className={`w-full px-3.5 py-2.5 rounded-xl border text-xs outline-none ${inputBg}`}
+                      />
+                    </div>
+                    <div>
+                      <label className={`block text-xs ${labelText} mb-1`}>Section Heading</label>
+                      <input
+                        type="text"
+                        value={formData.partnersSection?.title || "Collaborating Institutions & Research Sponsors"}
+                        onChange={(e) =>
+                          setFormData({
+                            ...formData,
+                            partnersSection: { ...formData.partnersSection, title: e.target.value },
+                          })
+                        }
+                        className={`w-full px-3.5 py-2.5 rounded-xl border text-xs outline-none ${inputBg}`}
+                      />
+                    </div>
                   </div>
-                </div>
 
-                {/* Simple Upload Guide */}
-                <div className="flex items-center justify-between text-xs px-1 text-slate-400">
-                  <span className="font-semibold text-slate-300">
-                    Partner Logos ({((formData.partnersSection?.partners || DEFAULT_LANDING_DATA.partnersSection.partners || []).length)})
-                  </span>
-                  <span className="text-[11px] font-mono text-emerald-400">
-                    Recommended: PNG / SVG with transparent background (1:1 or 3:2)
-                  </span>
-                </div>
+                  {/* Upload Guide / Counter */}
+                  <div className="flex items-center justify-between text-xs px-1 text-slate-400">
+                    <span className="font-semibold text-slate-300">
+                      Configured Partner Logos ({partnersList.length})
+                    </span>
+                    <span className="text-[11px] font-mono text-emerald-400">
+                      Recommended: PNG / SVG with transparent background
+                    </span>
+                  </div>
 
-                {/* Clean Visual Grid of Logos */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 pt-1">
-                  {(formData.partnersSection?.partners || DEFAULT_LANDING_DATA.partnersSection.partners || []).map((partner, index) => {
-                    const currentPartners =
-                      formData.partnersSection?.partners ||
-                      DEFAULT_LANDING_DATA.partnersSection.partners ||
-                      [];
-
-                    const updatePartnerField = (field: string, value: string) => {
-                      const updated = [...currentPartners];
-                      updated[index] = { ...updated[index], [field]: value };
-                      setFormData({
-                        ...formData,
-                        partnersSection: {
-                          ...formData.partnersSection,
-                          partners: updated,
-                        },
-                      });
-                    };
-
-                    const removePartner = () => {
-                      const updated = currentPartners.filter((_, i) => i !== index);
-                      setFormData({
-                        ...formData,
-                        partnersSection: {
-                          ...formData.partnersSection,
-                          partners: updated,
-                        },
-                      });
-                    };
-
-                    return (
-                      <div
-                        key={partner.id || index}
-                        className={`p-3.5 rounded-2xl border ${
-                          isLight ? "bg-white border-slate-200" : "bg-[#090D16] border-slate-800"
-                        } flex flex-col gap-2 relative transition-all group hover:border-emerald-500/50`}
+                  {/* Empty state or Visual Grid */}
+                  {partnersList.length === 0 ? (
+                    <div
+                      className={`p-8 text-center rounded-2xl border-2 border-dashed ${
+                        isLight ? "border-slate-200 bg-slate-50/50" : "border-slate-800 bg-slate-900/30"
+                      } flex flex-col items-center justify-center gap-3`}
+                    >
+                      <div className="w-12 h-12 rounded-2xl bg-emerald-500/10 text-emerald-500 flex items-center justify-center">
+                        <Globe className="w-6 h-6" />
+                      </div>
+                      <div className="max-w-md">
+                        <h4 className={`text-sm font-semibold ${titleText}`}>No Partner Logos Configured</h4>
+                        <p className="text-xs text-slate-400 mt-1">
+                          No partner or sponsor logos have been uploaded yet. When empty, this section is cleanly hidden from the public homepage.
+                        </p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={addNewPartner}
+                        className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold shadow-xs transition-all cursor-pointer"
                       >
-                        {/* Top Action Bar with Delete */}
-                        <div className="flex items-center justify-between">
-                          <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">
-                            Logo {index + 1}
-                          </span>
-                          <button
-                            type="button"
-                            onClick={removePartner}
-                            className="p-1.5 rounded-lg text-slate-400 hover:text-rose-500 hover:bg-rose-500/10 transition-colors cursor-pointer"
-                            title="Remove Logo"
+                        <Plus className="w-4 h-4" />
+                        <span>Add First Organization</span>
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 pt-1">
+                      {partnersList.map((partner, index) => {
+                        const updatePartnerField = (field: string, value: string) => {
+                          const updated = [...partnersList];
+                          updated[index] = { ...updated[index], [field]: value };
+                          setFormData({
+                            ...formData,
+                            partnersSection: {
+                              ...formData.partnersSection,
+                              partners: updated,
+                            },
+                          });
+                        };
+
+                        const removePartner = () => {
+                          const updated = partnersList.filter((_, i) => i !== index);
+                          setFormData({
+                            ...formData,
+                            partnersSection: {
+                              ...formData.partnersSection,
+                              partners: updated,
+                            },
+                          });
+                        };
+
+                        return (
+                          <div
+                            key={partner.id || index}
+                            className={`p-3.5 rounded-2xl border ${
+                              isLight ? "bg-white border-slate-200" : "bg-[#090D16] border-slate-800"
+                            } flex flex-col gap-3 relative transition-all group hover:border-emerald-500/50`}
                           >
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </button>
-                        </div>
-
-                        {/* Visual Upload / Preview Box (Only Logo) */}
-                        <label className={`w-full h-36 rounded-xl border-2 border-dashed flex flex-col items-center justify-center p-3 relative cursor-pointer transition-all ${
-                          partner.logoUrl
-                            ? isLight ? "bg-slate-50 border-emerald-500/40" : "bg-slate-900/60 border-emerald-500/40"
-                            : isLight ? "bg-slate-50 border-slate-300 hover:border-emerald-500 hover:bg-emerald-50/20" : "bg-slate-900/40 border-slate-700 hover:border-emerald-400 hover:bg-emerald-950/20"
-                        }`}>
-                          {partner.logoUrl ? (
-                            <div className="relative w-full h-full flex items-center justify-center">
-                              <img
-                                src={partner.logoUrl}
-                                alt="Organization Logo"
-                                className="max-h-full max-w-full object-contain"
-                              />
-                              <div className="absolute inset-0 bg-slate-950/60 backdrop-blur-xs opacity-0 group-hover:opacity-100 flex items-center justify-center gap-2 transition-opacity rounded-lg">
-                                <span className="px-3 py-1.5 rounded-lg bg-emerald-600 text-white text-xs font-bold shadow-md">
-                                  Change Logo
-                                </span>
-                              </div>
-                            </div>
-                          ) : (
-                            <div className="flex flex-col items-center justify-center text-center gap-1.5 pointer-events-none">
-                              <div className="w-9 h-9 rounded-full bg-emerald-500/10 text-emerald-500 flex items-center justify-center">
-                                <Upload className="w-4 h-4" />
-                              </div>
-                              <span className="text-xs font-semibold text-emerald-500">Upload Logo</span>
-                              <span className="text-[10px] text-slate-400">Click to browse image (PNG/SVG)</span>
-                            </div>
-                          )}
-
-                          <input
-                            type="file"
-                            accept="image/*"
-                            className="hidden"
-                            onChange={(e) => {
-                              const file = e.target.files?.[0];
-                              if (file) {
-                                handleImageUpload(file, (dataUrl) =>
-                                  updatePartnerField("logoUrl", dataUrl)
-                                );
-                              }
-                            }}
-                          />
-                        </label>
-
-                        {/* Direct URL input & status */}
-                        <div className="space-y-1.5 pt-1">
-                          <input
-                            type="text"
-                            placeholder="Paste direct Logo URL..."
-                            value={partner.logoUrl || ""}
-                            onChange={(e) => updatePartnerField("logoUrl", e.target.value)}
-                            className={`w-full px-2.5 py-1.5 rounded-lg border text-[11px] font-mono outline-none ${inputBg}`}
-                          />
-                          {partner.logoUrl && (
-                            <div className="flex items-center justify-between text-[10px]">
-                              <span className="text-emerald-400 font-medium">✓ Logo Ready</span>
+                            {/* Top Action Bar */}
+                            <div className="flex items-center justify-between">
+                              <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">
+                                Partner #{index + 1}
+                              </span>
                               <button
                                 type="button"
-                                onClick={() => updatePartnerField("logoUrl", "")}
-                                className="text-rose-400 hover:text-rose-500 hover:underline cursor-pointer"
+                                onClick={removePartner}
+                                className="p-1.5 rounded-lg text-slate-400 hover:text-rose-500 hover:bg-rose-500/10 transition-colors cursor-pointer"
+                                title="Remove Partner"
                               >
-                                Clear
+                                <Trash2 className="w-3.5 h-3.5" />
                               </button>
                             </div>
-                          )}
-                        </div>
-                      </div>
-                    );
-                  })}
+
+                            {/* Logo Upload / Preview */}
+                            <label
+                              className={`w-full h-32 rounded-xl border-2 border-dashed flex flex-col items-center justify-center p-3 relative cursor-pointer transition-all ${
+                                partner.logoUrl
+                                  ? isLight
+                                    ? "bg-slate-50 border-emerald-500/40"
+                                    : "bg-slate-900/60 border-emerald-500/40"
+                                  : isLight
+                                  ? "bg-slate-50 border-slate-300 hover:border-emerald-500 hover:bg-emerald-50/20"
+                                  : "bg-slate-900/40 border-slate-700 hover:border-emerald-400 hover:bg-emerald-950/20"
+                              }`}
+                            >
+                              {partner.logoUrl ? (
+                                <div className="relative w-full h-full flex items-center justify-center">
+                                  <img
+                                    src={partner.logoUrl}
+                                    alt={partner.name || "Organization Logo"}
+                                    className="max-h-full max-w-full object-contain"
+                                  />
+                                  <div className="absolute inset-0 bg-slate-950/60 backdrop-blur-xs opacity-0 group-hover:opacity-100 flex items-center justify-center gap-2 transition-opacity rounded-lg">
+                                    <span className="px-2.5 py-1 rounded-lg bg-emerald-600 text-white text-[11px] font-bold shadow-md">
+                                      Change Logo
+                                    </span>
+                                  </div>
+                                </div>
+                              ) : (
+                                <div className="flex flex-col items-center justify-center text-center gap-1 pointer-events-none">
+                                  <div className="w-8 h-8 rounded-full bg-emerald-500/10 text-emerald-500 flex items-center justify-center">
+                                    <Upload className="w-4 h-4" />
+                                  </div>
+                                  <span className="text-xs font-semibold text-emerald-500">Upload Logo</span>
+                                  <span className="text-[10px] text-slate-400">PNG / SVG / JPG</span>
+                                </div>
+                              )}
+
+                              <input
+                                type="file"
+                                accept="image/*"
+                                className="hidden"
+                                onChange={(e) => {
+                                  const file = e.target.files?.[0];
+                                  if (file) {
+                                    handleImageUpload(file, (dataUrl) =>
+                                      updatePartnerField("logoUrl", dataUrl)
+                                    );
+                                  }
+                                }}
+                              />
+                            </label>
+
+                            {/* Organization Name Input */}
+                            <div>
+                              <label className={`block text-[10px] ${labelText} mb-0.5 font-medium`}>Organization Name</label>
+                              <input
+                                type="text"
+                                placeholder="e.g. Jahangirnagar University"
+                                value={partner.name || ""}
+                                onChange={(e) => updatePartnerField("name", e.target.value)}
+                                className={`w-full px-2.5 py-1.5 rounded-lg border text-xs outline-none ${inputBg}`}
+                              />
+                            </div>
+
+                            {/* Website URL Input */}
+                            <div>
+                              <label className={`block text-[10px] ${labelText} mb-0.5 font-medium`}>Website URL (Optional)</label>
+                              <input
+                                type="text"
+                                placeholder="https://..."
+                                value={partner.websiteUrl || ""}
+                                onChange={(e) => updatePartnerField("websiteUrl", e.target.value)}
+                                className={`w-full px-2.5 py-1.5 rounded-lg border text-[11px] font-mono outline-none ${inputBg}`}
+                              />
+                            </div>
+
+                            {/* Direct Logo URL */}
+                            <div>
+                              <label className={`block text-[10px] ${labelText} mb-0.5 font-medium`}>Direct Logo URL</label>
+                              <input
+                                type="text"
+                                placeholder="https://.../logo.png"
+                                value={partner.logoUrl || ""}
+                                onChange={(e) => updatePartnerField("logoUrl", e.target.value)}
+                                className={`w-full px-2.5 py-1.5 rounded-lg border text-[11px] font-mono outline-none ${inputBg}`}
+                              />
+                              {partner.logoUrl && (
+                                <div className="flex items-center justify-between text-[10px] mt-1">
+                                  <span className="text-emerald-400 font-medium">✓ Logo Set</span>
+                                  <button
+                                    type="button"
+                                    onClick={() => updatePartnerField("logoUrl", "")}
+                                    className="text-rose-400 hover:text-rose-500 hover:underline cursor-pointer"
+                                  >
+                                    Clear Logo
+                                  </button>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
                 </div>
-              </div>
-            )}
+              );
+            })()}
 
             {/* 6. PUBLICATIONS */}
             {activeTab === "publications" && (

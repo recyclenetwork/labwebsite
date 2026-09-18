@@ -28,10 +28,11 @@ import { Footer } from "@/components/public/footer";
 import { NewsArticle, NewsCategory } from "@/lib/news/types";
 import { getPublishedNews, getNewsStats, getAvailableNewsYears } from "@/lib/news/queries";
 import { NEWS_CATEGORIES_META } from "@/lib/news/seed-data";
-import { SEED_RESEARCHERS } from "@/lib/projects/seed-data";
+import { getTeamMembers, getCachedTeamMembers } from "@/lib/team/store";
 
 export default function NewsPage() {
   const [articles, setArticles] = useState<NewsArticle[]>([]);
+  const [teamMembers, setTeamMembers] = useState<any[]>(() => getCachedTeamMembers());
   const [isLoading, setIsLoading] = useState(true);
   const [stats, setStats] = useState({
     totalArticles: 0,
@@ -56,12 +57,14 @@ export default function NewsPage() {
   const loadData = async () => {
     setIsLoading(true);
     try {
-      const [newsData, statsData] = await Promise.all([
+      const [newsData, statsData, members] = await Promise.all([
         getPublishedNews({}, false),
         getNewsStats(),
+        getTeamMembers(),
       ]);
       setArticles(newsData);
       setStats(statsData);
+      if (members && members.length > 0) setTeamMembers(members);
     } catch (err) {
       console.error("Error loading news articles:", err);
     } finally {
@@ -84,6 +87,18 @@ export default function NewsPage() {
 
   // Dynamic available years
   const availableYears = useMemo(() => getAvailableNewsYears(articles), [articles]);
+
+  // Dynamic authors list from articles and team
+  const availableAuthors = useMemo(() => {
+    const names = new Set<string>();
+    articles.forEach((a) => {
+      if (a.author_name) names.add(a.author_name);
+    });
+    teamMembers.forEach((m) => {
+      if (m.name) names.add(m.name);
+    });
+    return Array.from(names).sort();
+  }, [articles, teamMembers]);
 
   const toggleYear = (year: number) => {
     setSelectedYears((prev) =>
@@ -555,13 +570,13 @@ export default function NewsPage() {
                       className="w-full pl-3 pr-9 py-2.5 text-xs font-bold rounded-xl bg-slate-50 dark:bg-[#0F172A] border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-slate-100 outline-none focus:border-emerald-600 appearance-none shadow-xs cursor-pointer"
                     >
                       <option value="all">All Authors ({articles.length} Stories)</option>
-                      {SEED_RESEARCHERS.map((res) => {
+                      {availableAuthors.map((name) => {
                         const count = articles.filter((a) =>
-                          a.author_name.toLowerCase().includes(res.name.toLowerCase())
+                          a.author_name.toLowerCase().includes(name.toLowerCase())
                         ).length;
                         return (
-                          <option key={res.id} value={res.name}>
-                            {res.name} — ({count} {count === 1 ? "Story" : "Stories"})
+                          <option key={name} value={name}>
+                            {name} — ({count} {count === 1 ? "Story" : "Stories"})
                           </option>
                         );
                       })}

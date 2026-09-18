@@ -5,10 +5,34 @@ import {
   PublicationFilterParams,
   PublicationResearchArea,
 } from "./types";
-import { SEED_PUBLICATIONS } from "./seed-data";
-import { SEED_RESEARCH_AREAS } from "../projects/seed-data";
+
 
 const LOCAL_STORAGE_KEY = "lab_publications_override_v2";
+
+export function cleanPublicationList(items: any[]): PublicationWithRelations[] {
+  if (!Array.isArray(items)) return [];
+  return items.filter((p) => {
+    if (!p || typeof p !== "object") return false;
+    const id = String(p.id || "");
+    const title = String(p.title || "");
+    if (
+      id.startsWith("pub-00") ||
+      ["pub-1", "pub-2", "pub-3", "pub-4", "pub-5", "pub-6", "pub-7", "pub-8"].includes(id)
+    ) {
+      return false;
+    }
+    if (
+      title.includes("Micro-FTIR Spectral Identification") ||
+      title.includes("Tritiated Arsenic Speciation") ||
+      title.includes("Seasonal Inundation Pathways") ||
+      title.includes("Dietary Exposure Quotients") ||
+      title.includes("Biochar Pyrolysis Temperature")
+    ) {
+      return false;
+    }
+    return true;
+  });
+}
 
 /**
  * Get local in-browser publication override storage (for local dev resilience)
@@ -21,17 +45,24 @@ export function getLocalPublications(): PublicationWithRelations[] {
       return [];
     }
     const parsed = JSON.parse(raw);
-    return Array.isArray(parsed) ? parsed : [];
+    const cleaned = cleanPublicationList(parsed);
+    if (cleaned.length !== (Array.isArray(parsed) ? parsed.length : 0)) {
+      saveLocalPublications(cleaned, false);
+    }
+    return cleaned;
   } catch {
     return [];
   }
 }
 
-export function saveLocalPublications(items: PublicationWithRelations[]) {
+export function saveLocalPublications(items: PublicationWithRelations[], dispatchUpdate: boolean = true) {
   if (typeof window === "undefined") return;
   try {
-    localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(items));
-    window.dispatchEvent(new Event("lab_publications_updated"));
+    const cleaned = cleanPublicationList(items);
+    localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(cleaned));
+    if (dispatchUpdate) {
+      window.dispatchEvent(new Event("lab_publications_updated"));
+    }
   } catch (err) {
     console.error("Failed to save local publications:", err);
   }
@@ -99,15 +130,19 @@ export async function getPublishedPublications(
           projects: localMatch?.projects || [],
         };
       });
+      items = cleanPublicationList(items);
+      saveLocalPublications(items, false);
+    } else if (!error && data && data.length === 0) {
+      items = [];
+      saveLocalPublications([], false);
     } else {
-      items = localList;
+      items = cleanPublicationList(localList);
     }
 
     // Apply Client / In-memory Filtering
     return applyFilters(items, filters, includeDrafts);
   } catch (err) {
-    console.warn("Using local publications store:", err);
-    return applyFilters(localList, filters, includeDrafts);
+    return applyFilters(cleanPublicationList(localList), filters, includeDrafts);
   }
 }
 

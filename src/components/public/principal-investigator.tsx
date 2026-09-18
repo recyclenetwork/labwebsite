@@ -15,7 +15,6 @@ import {
 } from "lucide-react";
 import { useLandingData } from "@/lib/landing-store";
 import { getTeamMembers, getCachedPI } from "@/lib/team/store";
-import { INITIAL_TEAM_MEMBERS } from "@/lib/team/seed-data";
 import { TeamMember } from "@/lib/team/types";
 
 export function PrincipalInvestigator() {

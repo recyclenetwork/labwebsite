@@ -4,7 +4,7 @@ import * as React from "react";
 import Link from "next/link";
 import { FlaskConical, ArrowRight, Share2, Sparkles, CheckCircle2 } from "lucide-react";
 
-const MOCK_ECOSYSTEM_NODES = [
+const ECOSYSTEM_NODES = [
   { id: "researchers", label: "Researchers", count: "", category: "People", description: "", href: "/people" },
   { id: "projects", label: "Active Projects", count: "", category: "Investigation", description: "", href: "/projects" },
   { id: "areas", label: "Research Areas", count: "", category: "Core Science", description: "", href: "/research" },
@@ -16,8 +16,8 @@ export function ResearchEcosystem() {
   const [selectedNodeId, setSelectedNodeId] = React.useState<string>("researchers");
 
   const activeNode =
-    MOCK_ECOSYSTEM_NODES.find((node) => node.id === selectedNodeId) ||
-    MOCK_ECOSYSTEM_NODES[0];
+    ECOSYSTEM_NODES.find((node) => node.id === selectedNodeId) ||
+    ECOSYSTEM_NODES[0];
 
   return (
     <section className="py-16 lg:py-24 bg-[#F4F8F5] dark:bg-[#0B1120] border-y border-slate-200 dark:border-slate-800 transition-colors duration-300 overflow-hidden">
@@ -54,7 +54,7 @@ export function ResearchEcosystem() {
 
               {/* Satellite Node Buttons */}
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-3.5 w-full pt-4">
-                {MOCK_ECOSYSTEM_NODES.map((node) => {
+                {ECOSYSTEM_NODES.map((node) => {
                   const isSelected = selectedNodeId === node.id;
 
                   return (

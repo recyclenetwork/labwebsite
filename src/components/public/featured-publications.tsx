@@ -133,19 +133,19 @@ export function FeaturedPublications({ publications: propPublications }: Feature
             is_featured: pub.is_featured,
           }))
         );
+      } else {
+        setItems([]);
       }
-    });
+    }).catch(() => {});
 
     const handleUpdate = () => {
       loadPublications();
     };
 
     window.addEventListener("lab_publications_updated", handleUpdate);
-    window.addEventListener("storage", handleUpdate);
 
     return () => {
       window.removeEventListener("lab_publications_updated", handleUpdate);
-      window.removeEventListener("storage", handleUpdate);
     };
   }, [loadPublications]);
 

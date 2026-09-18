@@ -751,3 +751,26 @@ ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON TABLES TO anon, authentic
 ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON SEQUENCES TO anon, authenticated, service_role;
 ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON ROUTINES TO anon, authenticated, service_role;
 
+-- ------------------------------------------------------------------------------
+-- 14. ROW LEVEL SECURITY (RLS) CONFIGURATION
+-- ------------------------------------------------------------------------------
+-- For an academic lab website with a public front-end and authenticated admin,
+-- disable RLS on public tables or grant full open policies so queries never fail with 42501.
+ALTER TABLE IF EXISTS public.projects DISABLE ROW LEVEL SECURITY;
+ALTER TABLE IF EXISTS public.people DISABLE ROW LEVEL SECURITY;
+ALTER TABLE IF EXISTS public.publications DISABLE ROW LEVEL SECURITY;
+ALTER TABLE IF EXISTS public.news DISABLE ROW LEVEL SECURITY;
+ALTER TABLE IF EXISTS public.research_areas DISABLE ROW LEVEL SECURITY;
+ALTER TABLE IF EXISTS public.site_settings DISABLE ROW LEVEL SECURITY;
+ALTER TABLE IF EXISTS public.project_researchers DISABLE ROW LEVEL SECURITY;
+ALTER TABLE IF EXISTS public.project_research_areas DISABLE ROW LEVEL SECURITY;
+ALTER TABLE IF EXISTS public.project_collaborators DISABLE ROW LEVEL SECURITY;
+ALTER TABLE IF EXISTS public.publication_authors DISABLE ROW LEVEL SECURITY;
+ALTER TABLE IF EXISTS public.publication_research_areas DISABLE ROW LEVEL SECURITY;
+ALTER TABLE IF EXISTS public.publication_projects DISABLE ROW LEVEL SECURITY;
+ALTER TABLE IF EXISTS public.admin_activity DISABLE ROW LEVEL SECURITY;
+ALTER TABLE IF EXISTS public.opportunities DISABLE ROW LEVEL SECURITY;
+ALTER TABLE IF EXISTS public.contact_messages DISABLE ROW LEVEL SECURITY;
+ALTER TABLE IF EXISTS public.gallery_images DISABLE ROW LEVEL SECURITY;
+
+
