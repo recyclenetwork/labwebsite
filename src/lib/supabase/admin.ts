@@ -10,13 +10,10 @@ export function createAdminClient() {
   const serviceRoleKey =
     process.env.SUPABASE_SERVICE_ROLE_KEY ||
     process.env.SUPABASE_SECRET_KEY ||
-    "";
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ||
+    "sb_publishable_9y2S6BL9Zlfd-qZCr4ui7Q_0h76uko4";
 
-  if (!serviceRoleKey) {
-    console.warn("SUPABASE_SERVICE_ROLE_KEY is not set in environment.");
-  }
-
-  return createClient<Database>(supabaseUrl, serviceRoleKey || "service_role_key_placeholder", {
+  return createClient<Database>(supabaseUrl, serviceRoleKey, {
     auth: {
       autoRefreshToken: false,
       persistSession: false,
