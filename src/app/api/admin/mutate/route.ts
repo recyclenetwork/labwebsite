@@ -1,13 +1,28 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { createClient } from "@supabase/supabase-js";
 
 export const dynamic = "force-dynamic";
+
+const FALLBACK_SUPABASE_URL = "https://ztgwpyoztzpvqnwoixuy.supabase.co";
+const FALLBACK_SUPABASE_ANON_KEY = "sb_publishable_9y2S6BL9Zlfd-qZCr4ui7Q_0h76uko4";
 
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
     const { entity, action, data, id } = body;
-    const supabase = createAdminClient();
+    
+    let supabase = createAdminClient();
+    const authHeader = req.headers.get("authorization");
+    if (!process.env.SUPABASE_SERVICE_ROLE_KEY && authHeader) {
+      const token = authHeader.replace("Bearer ", "").trim();
+      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || FALLBACK_SUPABASE_URL;
+      const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || FALLBACK_SUPABASE_ANON_KEY;
+      supabase = createClient(supabaseUrl, supabaseAnonKey, {
+        global: { headers: { Authorization: `Bearer ${token}` } },
+        auth: { persistSession: false },
+      }) as any;
+    }
 
     // 1. PROJECTS
     if (entity === "project") {
@@ -236,14 +251,30 @@ export async function POST(req: NextRequest) {
 
     // 4. PEOPLE / TEAM
     if (entity === "person") {
-      if (action === "upsert") {
+      if (action === "create" || action === "upsert") {
+        const rawPayload = data?.personPayload || data || {};
+        const personPayload = {
+          ...rawPayload,
+          id: rawPayload.id || id || `person-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+        };
+
         const { data: upserted, error } = await (supabase as any)
           .from("people")
-          .upsert([data.personPayload])
+          .upsert([personPayload])
           .select()
           .single();
         if (error) throw error;
         return NextResponse.json({ success: true, data: upserted });
+      }
+
+      if (action === "update") {
+        const rawPayload = data?.personPayload || data || {};
+        const { error } = await (supabase as any)
+          .from("people")
+          .update(rawPayload)
+          .eq("id", id);
+        if (error) throw error;
+        return NextResponse.json({ success: true });
       }
 
       if (action === "delete") {

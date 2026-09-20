@@ -9,11 +9,15 @@ export function cleanTeamList(items: any[]): TeamMember[] {
   if (!Array.isArray(items)) return [];
   return items.filter((m) => {
     if (!m || typeof m !== "object") return false;
+    const name = String(m.name || "").trim().toLowerCase();
     const id = String(m.id || "");
-    if (["person-1", "person-2", "person-3", "person-4", "person-5", "member-1", "member-2"].includes(id)) {
+    if (
+      ["person-1", "person-2", "person-3", "person-4", "person-5", "member-1", "member-2"].includes(id) &&
+      (name === "dr. demo" || name === "sample researcher" || name === "unnamed researcher" || !m.name)
+    ) {
       return false;
     }
-    return true;
+    return Boolean(m.name && String(m.name).trim());
   });
 }
 
@@ -42,6 +46,27 @@ export function getCachedPI(): TeamMember | null {
 }
 
 export async function getTeamMembers(): Promise<TeamMember[]> {
+  let localMembersMap: Record<string, TeamMember> = {};
+  let localList: TeamMember[] = [];
+
+  if (typeof window !== "undefined") {
+    try {
+      const idbData = await idbGet<TeamMember[]>(LOCAL_STORAGE_KEY);
+      if (Array.isArray(idbData) && idbData.length > 0) {
+        localList = cleanTeamList(idbData);
+      }
+    } catch {}
+    if (localList.length === 0) {
+      const ls = safeLocalStorageGet<TeamMember[]>(LOCAL_STORAGE_KEY);
+      if (Array.isArray(ls) && ls.length > 0) {
+        localList = cleanTeamList(ls);
+      }
+    }
+    localList.forEach((m) => {
+      if (m?.id) localMembersMap[m.id] = m;
+    });
+  }
+
   // 1. Try Supabase first
   try {
     const supabase = createClient();
@@ -52,6 +77,14 @@ export async function getTeamMembers(): Promise<TeamMember[]> {
 
     if (!error && Array.isArray(data)) {
       if (data.length === 0) {
+        // If Supabase is empty, but we have locally saved members (e.g. newly created), preserve and sync them!
+        if (localList.length > 0) {
+          for (const m of localList) {
+            saveTeamMember(m).catch(() => {});
+          }
+          return localList;
+        }
+
         if (typeof window !== "undefined") {
           await idbSet(LOCAL_STORAGE_KEY, []);
           safeLocalStorageSet(LOCAL_STORAGE_KEY, []);
@@ -59,34 +92,69 @@ export async function getTeamMembers(): Promise<TeamMember[]> {
         return [];
       }
 
-      const mapped: TeamMember[] = cleanTeamList(data.map((row: any) => ({
-        id: row.id,
-        name: row.name,
-        slug: row.slug || row.name.toLowerCase().replace(/[^a-z0-9]+/g, "-"),
-        role: row.role || row.position || "",
-        position: row.position || row.role || "",
-        designation: row.designation || "",
-        category: row.category || "researcher",
-        department: row.department || "Department of Environmental Sciences",
-        affiliation: row.affiliation || "Jahangirnagar University",
-        email: row.email || "",
-        bio: row.bio || row.biography || "",
-        quote: row.quote || "",
-        researchInterests: Array.isArray(row.research_interests)
-          ? row.research_interests
-          : row.research_interests ? String(row.research_interests).split(",") : [],
-        imageSrc: row.photo_url || row.image_url || "/images/slide-2-lab.jpg",
-        imageAlt: row.name,
-        publicationsCount: row.publications_count || "0",
-        citationsCount: row.citations_count || "0",
-        hIndex: row.h_index || "0",
-        grantsCount: row.grants_count || "0",
-        currentInstitution: row.current_institution || "",
-        alumniYear: row.alumni_year || "",
-        pastRole: row.past_role || "",
-        orderIndex: row.order_index || 0,
-        isActive: row.is_active ?? true,
-      })));
+      const validCategories: TeamCategory[] = ["pi", "phd", "graduate", "undergraduate", "alumni"];
+
+      const mapped: TeamMember[] = cleanTeamList(
+        data.map((row: any) => {
+          const local = localMembersMap[row.id] || {};
+          const matchedCategory: TeamCategory = validCategories.includes(row.category)
+            ? (row.category as TeamCategory)
+            : validCategories.includes(local.category)
+            ? local.category
+            : "undergraduate";
+
+          return {
+            id: row.id,
+            name: row.name,
+            slug: row.slug || (row.name ? row.name.toLowerCase().replace(/[^a-z0-9]+/g, "-") : `member-${row.id}`),
+            role: row.role || row.position || row.designation || local.role || "",
+            category: matchedCategory,
+            department: row.department || local.department || "Department of Environmental Sciences",
+            affiliation: row.affiliation || local.affiliation || "Jahangirnagar University",
+            email: row.email || local.email || "",
+            phone: row.phone || local.phone || "",
+            officeLocation: row.office_location || local.officeLocation || "",
+            googleScholarUrl: row.google_scholar_url || row.google_scholar || local.googleScholarUrl || "",
+            orcid: row.orcid || local.orcid || "",
+            researchGateUrl: row.researchgate_url || local.researchGateUrl || "",
+            linkedinUrl: row.linkedin_url || local.linkedinUrl || "",
+            websiteUrl: row.website_url || row.website || local.websiteUrl || "",
+            bio: row.bio || row.biography || local.bio || "",
+            quote: row.quote || local.quote || "",
+            researchInterests: Array.isArray(row.research_interests)
+              ? row.research_interests
+              : row.research_interests
+              ? String(row.research_interests).split(",").map((s: string) => s.trim())
+              : local.researchInterests || [],
+            education: Array.isArray(row.education) ? row.education : local.education || [],
+            skills: local.skills || [],
+            awards: local.awards || [],
+            publications: local.publications || [],
+            imageSrc: row.photo_url || row.image_url || local.imageSrc || "/images/slide-2-lab.jpg",
+            imageAlt: row.name,
+            publicationsCount: row.publications_count !== null && row.publications_count !== undefined ? String(row.publications_count) : local.publicationsCount || "0",
+            citationsCount: row.citations_count !== null && row.citations_count !== undefined ? String(row.citations_count) : local.citationsCount || "0",
+            hIndex: row.h_index !== null && row.h_index !== undefined ? String(row.h_index) : local.hIndex || "0",
+            grantsCount: row.grants_count !== null && row.grants_count !== undefined ? String(row.grants_count) : local.grantsCount || "0",
+            advisingCount: row.advising_count !== null && row.advising_count !== undefined ? String(row.advising_count) : local.advisingCount || "0",
+            thesisTopic: row.thesis_topic || local.thesisTopic || "",
+            advisor: row.advisor || local.advisor || "",
+            expectedGraduation: row.expected_graduation || local.expectedGraduation || "",
+            undergradThesis: local.undergradThesis || "",
+            undergradDescription: local.undergradDescription || "",
+            mscThesis: local.mscThesis || "",
+            mscDescription: local.mscDescription || "",
+            phdThesis: local.phdThesis || "",
+            phdDescription: local.phdDescription || "",
+            currentPosition: row.current_position || local.currentPosition || "",
+            currentInstitution: row.current_institution || local.currentInstitution || "",
+            alumniYear: row.alumni_year || local.alumniYear || "",
+            pastRole: row.past_role || local.pastRole || "",
+            orderIndex: row.order_index ?? row.display_order ?? local.orderIndex ?? 0,
+            isActive: row.is_active ?? local.isActive ?? true,
+          };
+        })
+      );
 
       // Cache locally
       await idbSet(LOCAL_STORAGE_KEY, mapped);
@@ -97,28 +165,11 @@ export async function getTeamMembers(): Promise<TeamMember[]> {
     // Supabase query failed, fallback
   }
 
-  // 2. Check IndexedDB in browser (unlimited quota)
-  if (typeof window !== "undefined") {
-    try {
-      const idbData = await idbGet<TeamMember[]>(LOCAL_STORAGE_KEY);
-      if (Array.isArray(idbData) && idbData.length > 0) {
-        const cleaned = cleanTeamList(idbData);
-        return cleaned;
-      }
-    } catch (e) {
-      console.warn("IndexedDB read error:", e);
-    }
-
-    // 3. Check localStorage in browser
-    const cached = safeLocalStorageGet<TeamMember[]>(LOCAL_STORAGE_KEY);
-    if (Array.isArray(cached) && cached.length > 0) {
-      const cleaned = cleanTeamList(cached);
-      await idbSet(LOCAL_STORAGE_KEY, cleaned);
-      return cleaned;
-    }
+  // 2. Check local storage if Supabase failed or offline
+  if (localList.length > 0) {
+    return localList;
   }
 
-  // 4. Return empty array — no hardcoded seed data fallback
   return [];
 }
 
@@ -126,16 +177,16 @@ export async function saveTeamMember(member: Partial<TeamMember>): Promise<TeamM
   const current = await getTeamMembers();
   let updatedList: TeamMember[];
 
+  const nowId = member.id && member.id.trim() !== "" ? member.id : `team-${Date.now()}`;
   const isNew = !member.id || !current.some((m) => m.id === member.id);
-  const nowId = member.id || `team-${Date.now()}`;
-  const slug = member.slug || (member.name ? member.name.toLowerCase().replace(/[^a-z0-9]+/g, "-") : `member-${Date.now()}`);
+  const slug = member.slug || (member.name ? member.name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "") : `member-${Date.now()}`);
 
   const completeMember: TeamMember = {
     id: nowId,
     name: member.name || "Unnamed Researcher",
     slug,
     role: member.role || "Research Fellow",
-    category: member.category || "graduate",
+    category: (member.category as TeamCategory) || "graduate",
     department: member.department || "Department of Environmental Sciences",
     affiliation: member.affiliation || "Jahangirnagar University",
     bio: member.bio || "",
@@ -178,7 +229,7 @@ export async function saveTeamMember(member: Partial<TeamMember>): Promise<TeamM
   };
 
   if (isNew) {
-    updatedList = [completeMember, ...current];
+    updatedList = [completeMember, ...current.filter((m) => m.id !== completeMember.id)];
   } else {
     updatedList = current.map((m) => (m.id === completeMember.id ? completeMember : m));
   }
@@ -190,58 +241,78 @@ export async function saveTeamMember(member: Partial<TeamMember>): Promise<TeamM
     safeLocalStorageSet(LOCAL_STORAGE_KEY, updatedList);
   }
 
-  // 3. Try saving to Supabase if table exists
-  try {
-    const supabase = createClient();
-    const payload: Record<string, any> = {
-      name: completeMember.name,
-      slug: completeMember.slug,
-      position: completeMember.role,
-      role: completeMember.role,
-      designation: completeMember.role,
-      category: completeMember.category,
-      department: completeMember.department,
-      affiliation: completeMember.affiliation,
-      bio: completeMember.bio,
-      biography: completeMember.bio,
-      email: completeMember.email,
-      phone: completeMember.phone,
-      office_location: completeMember.officeLocation,
-      google_scholar: completeMember.googleScholarUrl,
-      google_scholar_url: completeMember.googleScholarUrl,
-      researchgate_url: completeMember.researchGateUrl,
-      linkedin_url: completeMember.linkedinUrl,
-      website_url: completeMember.websiteUrl,
-      photo_url: completeMember.imageSrc,
-      image_url: completeMember.imageSrc,
-      quote: completeMember.quote,
-      research_interests: completeMember.researchInterests,
-      education: completeMember.education,
-      publications_count: completeMember.publicationsCount,
-      citations_count: completeMember.citationsCount,
-      h_index: completeMember.hIndex,
-      grants_count: completeMember.grantsCount,
-      advising_count: completeMember.advisingCount,
-      thesis_topic: completeMember.thesisTopic,
-      advisor: completeMember.advisor,
-      expected_graduation: completeMember.expectedGraduation,
-      current_position: completeMember.currentPosition,
-      current_institution: completeMember.currentInstitution,
-      alumni_year: completeMember.alumniYear,
-      past_role: completeMember.pastRole,
-      order_index: completeMember.orderIndex,
-      display_order: completeMember.orderIndex,
-      is_active: completeMember.isActive,
-    };
+  // 3. Prepare payload for Supabase people table (always includes id)
+  const payload: Record<string, any> = {
+    id: completeMember.id,
+    name: completeMember.name,
+    slug: completeMember.slug,
+    position: completeMember.role,
+    role: completeMember.role,
+    designation: completeMember.role,
+    category: completeMember.category,
+    department: completeMember.department,
+    affiliation: completeMember.affiliation,
+    bio: completeMember.bio,
+    biography: completeMember.bio,
+    email: completeMember.email,
+    phone: completeMember.phone,
+    office_location: completeMember.officeLocation,
+    google_scholar: completeMember.googleScholarUrl,
+    google_scholar_url: completeMember.googleScholarUrl,
+    orcid: completeMember.orcid,
+    researchgate_url: completeMember.researchGateUrl,
+    linkedin_url: completeMember.linkedinUrl,
+    website: completeMember.websiteUrl,
+    website_url: completeMember.websiteUrl,
+    photo_url: completeMember.imageSrc,
+    image_url: completeMember.imageSrc,
+    quote: completeMember.quote,
+    research_interests: completeMember.researchInterests,
+    education: completeMember.education,
+    publications_count: completeMember.publicationsCount ? String(completeMember.publicationsCount) : null,
+    citations_count: completeMember.citationsCount ? String(completeMember.citationsCount) : null,
+    h_index: completeMember.hIndex ? String(completeMember.hIndex) : null,
+    grants_count: completeMember.grantsCount ? String(completeMember.grantsCount) : null,
+    advising_count: completeMember.advisingCount ? String(completeMember.advisingCount) : null,
+    thesis_topic: completeMember.thesisTopic,
+    advisor: completeMember.advisor,
+    expected_graduation: completeMember.expectedGraduation,
+    current_position: completeMember.currentPosition,
+    current_institution: completeMember.currentInstitution,
+    alumni_year: completeMember.alumniYear,
+    past_role: completeMember.pastRole,
+    order_index: completeMember.orderIndex,
+    display_order: completeMember.orderIndex,
+    is_active: completeMember.isActive,
+  };
 
-    // If ID is valid UUID, include it
-    if (completeMember.id && !completeMember.id.startsWith("tm-") && !completeMember.id.startsWith("pi-")) {
-      payload.id = completeMember.id;
+  // 4. Try saving to Supabase
+  let directSuccess = false;
+  if (typeof window !== "undefined") {
+    try {
+      const supabase = createClient();
+      const { data: upsertData, error: clientErr } = await (supabase as any)
+        .from("people")
+        .upsert([payload])
+        .select()
+        .single();
+      if (!clientErr && upsertData) {
+        directSuccess = true;
+      }
+    } catch (e) {
+      // client-side attempt error, fall through to adminMutate
     }
+  }
 
-    await adminMutate("person", "upsert", { personPayload: payload });
-  } catch (err) {
-    console.warn("Supabase team save sync warning:", err);
+  if (!directSuccess) {
+    try {
+      const mutateRes = await adminMutate("person", "upsert", { personPayload: payload });
+      if (!mutateRes?.success) {
+        console.warn("adminMutate save warning:", mutateRes?.error);
+      }
+    } catch (err) {
+      console.warn("Supabase team save sync warning:", err);
+    }
   }
 
   // If PI member, mirror updates to landing store
@@ -287,6 +358,13 @@ export async function deleteTeamMember(id: string): Promise<boolean> {
     await idbSet(LOCAL_STORAGE_KEY, updatedList);
     safeLocalStorageSet(LOCAL_STORAGE_KEY, updatedList);
     window.dispatchEvent(new Event("team-members-updated"));
+  }
+
+  if (typeof window !== "undefined") {
+    try {
+      const supabase = createClient();
+      await (supabase as any).from("people").delete().eq("id", id);
+    } catch {}
   }
 
   try {

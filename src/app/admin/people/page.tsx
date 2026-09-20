@@ -285,7 +285,17 @@ export default function AdminTeamPage() {
         pastRole: isAlumniCategory ? (formData.pastRole || "") : "",
       };
 
-      await saveTeamMember(payload);
+      const saved = await saveTeamMember(payload);
+      setMembers((prev) => {
+        const idx = prev.findIndex((m) => m.id === saved.id);
+        if (idx >= 0) {
+          const next = [...prev];
+          next[idx] = saved;
+          return next;
+        }
+        return [saved, ...prev];
+      });
+
       await loadData();
 
       setStatusMessage({
@@ -293,9 +303,9 @@ export default function AdminTeamPage() {
         text: `Researcher "${formData.name}" saved successfully!`,
       });
       setIsEditing(false);
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
-      setStatusMessage({ type: "error", text: "Failed to save team member." });
+      setStatusMessage({ type: "error", text: "Failed to save team member: " + (err?.message || "Unknown error") });
     } finally {
       setSaving(false);
     }
@@ -304,6 +314,7 @@ export default function AdminTeamPage() {
   const handleToggleActive = async (member: TeamMember) => {
     try {
       const updated = { ...member, isActive: !member.isActive };
+      setMembers((prev) => prev.map((m) => (m.id === member.id ? updated : m)));
       await saveTeamMember(updated);
       await loadData();
     } catch (e) {
@@ -313,6 +324,7 @@ export default function AdminTeamPage() {
 
   const handleDelete = async (id: string) => {
     try {
+      setMembers((prev) => prev.filter((m) => m.id !== id));
       await deleteTeamMember(id);
       await loadData();
       setDeleteConfirmId(null);

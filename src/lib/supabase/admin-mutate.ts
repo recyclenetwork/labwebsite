@@ -1,3 +1,5 @@
+import { createClient } from "@/lib/supabase/client";
+
 export async function adminMutate(
   entity: string,
   action: string,
@@ -6,11 +8,23 @@ export async function adminMutate(
 ): Promise<any> {
   if (typeof window !== "undefined") {
     try {
+      const headers: Record<string, string> = {
+        "Content-Type": "application/json",
+      };
+
+      try {
+        const supabase = createClient();
+        const { data: sessionData } = await supabase.auth.getSession();
+        if (sessionData?.session?.access_token) {
+          headers["Authorization"] = `Bearer ${sessionData.session.access_token}`;
+        }
+      } catch (authErr) {
+        // Non-fatal if session token cannot be retrieved
+      }
+
       const res = await fetch("/api/admin/mutate", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers,
         body: JSON.stringify({ entity, action, data, id }),
       });
       const json = await res.json();
@@ -27,3 +41,4 @@ export async function adminMutate(
 
   return { success: false, error: "adminMutate called outside browser context" };
 }
+
