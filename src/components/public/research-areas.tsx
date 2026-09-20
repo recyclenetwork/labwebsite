@@ -26,7 +26,6 @@ import {
   ResearchPillar,
   fetchResearchPillarsAsync,
   getStoredResearchPillars,
-  DEFAULT_RESEARCH_PILLARS,
 } from "@/lib/research-areas/store";
 
 interface StudyDomain {
@@ -88,13 +87,9 @@ interface ResearchAreasProps {
 export function ResearchAreas({ areas }: ResearchAreasProps = {}) {
   const { data: landingData } = useLandingData();
   const [viewMode, setViewMode] = React.useState<"deck" | "radial" | "grid">("deck");
-  const [domains, setDomains] = React.useState<StudyDomain[]>(() =>
-    DEFAULT_RESEARCH_PILLARS.map(mapPillarToDomain)
-  );
-
-  const [activeCard, setActiveCard] = React.useState<StudyDomain>(() =>
-    mapPillarToDomain(DEFAULT_RESEARCH_PILLARS[0], 0)
-  );
+  const [domains, setDomains] = React.useState<StudyDomain[]>([]);
+  const [activeCard, setActiveCard] = React.useState<StudyDomain | null>(null);
+  const [isLoading, setIsLoading] = React.useState(true);
 
   const [isHovering, setIsHovering] = React.useState(false);
   const [isShuffling, setIsShuffling] = React.useState(false);
@@ -120,9 +115,16 @@ export function ResearchAreas({ areas }: ResearchAreasProps = {}) {
           const match = mapped.find((m) => m.id === prev?.id);
           return match || mapped[0];
         });
+      } else {
+        setDomains([]);
+        setActiveCard(null);
       }
     } catch (err) {
       console.warn("Could not fetch remote research pillars:", err);
+      setDomains([]);
+      setActiveCard(null);
+    } finally {
+      setIsLoading(false);
     }
   }, []);
 
@@ -184,6 +186,10 @@ export function ResearchAreas({ areas }: ResearchAreasProps = {}) {
       setIsShuffling(false);
     }, 400);
   };
+
+  if (domains.length === 0 || !activeCard) {
+    return null;
+  }
 
   return (
     <section className="py-20 lg:py-28 bg-gradient-to-b from-[#F0FDF4]/60 via-[#F8FAF9] to-white dark:from-[#08130B] dark:via-[#090D16] dark:to-[#0B1120] text-slate-900 dark:text-white relative overflow-hidden transition-colors duration-300">

@@ -150,16 +150,7 @@ function LoginForm() {
                   className="text-[10px] text-emerald-400 hover:text-emerald-300 underline cursor-pointer"
                   title="Official Lab Admin Email"
                 >
-                  labeheenvju@gmail.com
-                </button>
-                <span className="text-slate-600 text-[10px]">|</span>
-                <button
-                  type="button"
-                  onClick={() => setEmail("sasajeeb1@gmail.com")}
-                  className="text-[10px] text-emerald-400 hover:text-emerald-300 underline cursor-pointer"
-                  title="Administrator Account"
-                >
-                  sasajeeb1@gmail.com
+                  Use labeheenvju@gmail.com
                 </button>
               </div>
             </div>

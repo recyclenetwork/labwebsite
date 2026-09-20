@@ -18,24 +18,6 @@ interface ProjectGalleryProps {
   projectTitle: string;
 }
 
-const DEFAULT_PROJECT_IMAGES = [
-  {
-    url: "https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?auto=format&fit=crop&w=1200&q=80",
-    caption: "Micro-FTIR chemical spectral mapping of polymeric particulate cores in laboratory chamber",
-  },
-  {
-    url: "https://images.unsplash.com/photo-1579154204601-01588f351e67?auto=format&fit=crop&w=1200&q=80",
-    caption: "Fieldwork sampling team collecting sediment core transects and water column specimens",
-  },
-  {
-    url: "https://images.unsplash.com/photo-1532187863486-abf9dbad1b69?auto=format&fit=crop&w=1200&q=80",
-    caption: "High-resolution fluorescence microscopy inspection of biological biomarker tissue",
-  },
-  {
-    url: "https://images.unsplash.com/photo-1518152006812-edab29b069ac?auto=format&fit=crop&w=1200&q=80",
-    caption: "Automated inductive coupled mass spectrometer calibration and continuous monitoring",
-  },
-];
 
 export function ProjectGallery({ images, projectTitle }: ProjectGalleryProps) {
   const [activeLightboxIndex, setActiveLightboxIndex] = useState<number | null>(null);
@@ -44,12 +26,14 @@ export function ProjectGallery({ images, projectTitle }: ProjectGalleryProps) {
   const validCustomImages = (images || []).filter((img) => typeof img === "string" && img.trim().length > 0);
 
   // Merge up to 4 images
-  const displayImages = validCustomImages.length > 0
-    ? validCustomImages.slice(0, 4).map((url, idx) => ({
-        url,
-        caption: `Project Visual Artifact 0${idx + 1} • ${projectTitle}`,
-      }))
-    : DEFAULT_PROJECT_IMAGES;
+  const displayImages = validCustomImages.slice(0, 4).map((url, idx) => ({
+    url,
+    caption: `Project Visual Artifact 0${idx + 1} • ${projectTitle}`,
+  }));
+
+  if (displayImages.length === 0) {
+    return null;
+  }
 
   return (
     <div className="space-y-6 pt-6">
