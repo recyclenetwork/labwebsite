@@ -41,6 +41,7 @@ import { PublicationWithRelations, PublicationType } from "@/lib/publications/ty
 import { getPublishedPublications, getPublicationStats, getAvailableYears } from "@/lib/publications/queries";
 import { getAllResearchAreas } from "@/lib/research-areas/store";
 import { getTeamMembers, getCachedTeamMembers } from "@/lib/team/store";
+import { DeveloperWatermark, isCreatorQuery } from "@/components/public/developer-watermark";
 
 export default function PublicationsPage() {
   const [publications, setPublications] = useState<PublicationWithRelations[]>([]);
@@ -327,6 +328,12 @@ export default function PublicationsPage() {
                   <ArrowRight className="w-3.5 h-3.5" />
                 </a>
               </div>
+
+              {isCreatorQuery(searchQuery) && (
+                <div className="mt-4 text-left">
+                  <DeveloperWatermark />
+                </div>
+              )}
             </div>
           </div>
         </div>

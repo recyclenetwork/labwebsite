@@ -152,23 +152,11 @@ export function Footer() {
           </div>
         </div>
 
-        {/* Bottom Bar: Copyright & Institutional Governance */}
-        <div className="pt-8 border-t border-slate-800 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-slate-400">
+        {/* Bottom Bar: Copyright */}
+        <div className="pt-8 border-t border-slate-800 flex items-center justify-center text-center text-xs text-slate-400">
           <div>
             {landingData?.footer?.copyrightText ||
               `© ${new Date().getFullYear()} ${landingData?.footer?.labName || SITE_CONFIG.name}. All rights reserved.`}
-          </div>
-
-          <div className="flex items-center gap-6">
-            <Link href="/about" className="hover:text-slate-200 transition-colors">
-              Institutional Ethics &amp; IRB
-            </Link>
-            <Link href="/contact" className="hover:text-slate-200 transition-colors">
-              Data Governance
-            </Link>
-            <Link href="/about" className="hover:text-slate-200 transition-colors">
-              Bio-Safety Protocols
-            </Link>
           </div>
         </div>
       </div>

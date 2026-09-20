@@ -57,8 +57,8 @@ export default function AdminSettingsPage() {
     contactEmail: "ecotox@juniv.edu",
     piName: "Dr. Mohammad S. Kabir",
     piEmail: "msk@juniv.edu",
-    supabaseUrl: "https://ztgwpyoztzpvqnwoixuy.supabase.co",
-    publicSiteUrl: "http://localhost:3000",
+    supabaseUrl: process.env.NEXT_PUBLIC_SUPABASE_URL || "",
+    publicSiteUrl: "",
   });
 
   const cardBg = isLight ? "bg-white border-slate-200/90 shadow-xs" : "bg-[#0F172A] border-slate-800 shadow-md";

@@ -28,6 +28,7 @@ import { Navbar } from "@/components/public/navbar";
 import { Footer } from "@/components/public/footer";
 import { NewsArticle } from "@/lib/news/types";
 import { getNewsBySlug, getPublishedNews } from "@/lib/news/queries";
+import { sanitizeHtml } from "@/lib/sanitize";
 import { NEWS_CATEGORIES_META } from "@/lib/news/seed-data";
 
 export default function NewsDetailPage() {
@@ -247,13 +248,15 @@ export default function NewsDetailPage() {
               <div
                 className="space-y-6 [&>h3]:text-xl [&>h3]:sm:text-2xl [&>h3]:font-extrabold [&>h3]:text-slate-950 [&>h3]:dark:text-white [&>h3]:font-[family-name:var(--font-manrope)] [&>h3]:mt-8 [&>h3]:mb-3 [&>blockquote]:p-4 [&>blockquote]:border-l-4 [&>blockquote]:border-emerald-600 [&>blockquote]:bg-slate-100 [&>blockquote]:dark:bg-slate-900/60 [&>blockquote]:rounded-r-2xl [&>blockquote]:italic [&>ul]:list-disc [&>ul]:pl-5 [&>ul]:space-y-2 [&>ol]:list-decimal [&>ol]:pl-5 [&>ol]:space-y-2 [&>pre]:p-4 [&>pre]:rounded-2xl [&>pre]:bg-slate-900 [&>pre]:text-emerald-400 [&>pre]:font-mono [&>pre]:text-xs [&>hr]:border-slate-200 [&>hr]:dark:border-slate-800"
                 dangerouslySetInnerHTML={{
-                  __html: article.content
-                    .replace(/### (.*)/g, "<h3>$1</h3>")
-                    .replace(/## (.*)/g, "<h2>$1</h2>")
-                    .replace(/> \*(.*)\*/g, "<blockquote><p>$1</p></blockquote>")
-                    .replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>")
-                    .replace(/\*(.*?)\*/g, "<em>$1</em>")
-                    .replace(/\n\n/g, "<br/><br/>")
+                  __html: sanitizeHtml(
+                    article.content
+                      .replace(/### (.*)/g, "<h3>$1</h3>")
+                      .replace(/## (.*)/g, "<h2>$1</h2>")
+                      .replace(/> \*(.*)\*/g, "<blockquote><p>$1</p></blockquote>")
+                      .replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>")
+                      .replace(/\*(.*?)\*/g, "<em>$1</em>")
+                      .replace(/\n\n/g, "<br/><br/>")
+                  )
                 }}
               />
             ) : (

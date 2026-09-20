@@ -32,8 +32,8 @@ const securityHeaders = [
       "script-src 'self' 'unsafe-eval' 'unsafe-inline'",
       "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
       "font-src 'self' https://fonts.gstatic.com data:",
-      "img-src 'self' data: blob: https://images.unsplash.com https://*.supabase.co https://ztgwpyoztzpvqnwoixuy.supabase.co https://*.google.com https://*.googleapis.com",
-      "connect-src 'self' https://*.supabase.co https://ztgwpyoztzpvqnwoixuy.supabase.co https://api.crossref.org https://doi.org https://*.doi.org",
+      "img-src 'self' data: blob: https://images.unsplash.com https://*.supabase.co https://*.google.com https://*.googleapis.com",
+      "connect-src 'self' https://*.supabase.co https://api.crossref.org https://doi.org https://*.doi.org",
       "frame-src 'self' https://www.google.com https://maps.google.com",
       "frame-ancestors 'none'",
       "form-action 'self'",
@@ -63,11 +63,6 @@ const nextConfig: NextConfig = {
       {
         protocol: "https",
         hostname: "*.supabase.co",
-        pathname: "/**",
-      },
-      {
-        protocol: "https",
-        hostname: "ztgwpyoztzpvqnwoixuy.supabase.co",
         pathname: "/**",
       },
     ],

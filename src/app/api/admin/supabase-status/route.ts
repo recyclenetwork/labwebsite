@@ -14,22 +14,17 @@ const TABLE_NAMES = [
   "research_areas",
 ];
 
-const FALLBACK_SUPABASE_URL = "https://ztgwpyoztzpvqnwoixuy.supabase.co";
-const FALLBACK_SUPABASE_ANON_KEY = "sb_publishable_9y2S6BL9Zlfd-qZCr4ui7Q_0h76uko4";
-
 export async function GET() {
   const supabaseUrl =
     process.env.NEXT_PUBLIC_SUPABASE_URL ||
-    process.env.SUPABASE_URL ||
-    FALLBACK_SUPABASE_URL;
+    process.env.SUPABASE_URL;
 
   // Use service role key if available, otherwise fall back to anon key
   // Both can query tables — the anon key works for RLS-enabled tables
   const apiKey =
     process.env.SUPABASE_SERVICE_ROLE_KEY ||
     process.env.SUPABASE_SECRET_KEY ||
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ||
-    FALLBACK_SUPABASE_ANON_KEY;
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
   if (!supabaseUrl || !apiKey) {
     return NextResponse.json({
@@ -87,10 +82,10 @@ export async function GET() {
   }
 
   // Extract project ref from URL
-  let projectRef = "ztgwpyoztzpvqnwoixuy";
+  let projectRef = "";
   try {
     const urlObj = new URL(supabaseUrl);
-    projectRef = urlObj.hostname.split(".")[0] || projectRef;
+    projectRef = urlObj.hostname.split(".")[0] || "";
   } catch {}
 
   const sqlEditorUrl = `https://supabase.com/dashboard/project/${projectRef}/sql/new`;

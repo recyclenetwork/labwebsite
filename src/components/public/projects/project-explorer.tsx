@@ -18,6 +18,7 @@ import { ProjectSkeleton } from "./project-skeleton";
 import { ProjectEmptyState } from "./project-empty-state";
 import { ProjectWorkflowBanner } from "./project-workflow-banner";
 import { Search, X, SlidersHorizontal, ArrowRight, ArrowLeft, Layers, ArrowUpDown } from "lucide-react";
+import { DeveloperWatermark, isCreatorQuery } from "../developer-watermark";
 
 interface ProjectExplorerProps {
   initialProjects: ProjectWithRelations[];
@@ -296,6 +297,10 @@ export function ProjectExplorer({
             <main className="lg:col-span-8 xl:col-span-9 space-y-6">
               {loading ? (
                 <ProjectSkeleton />
+              ) : isCreatorQuery(searchInput) ? (
+                <div className="py-4">
+                  <DeveloperWatermark />
+                </div>
               ) : projects.length === 0 ? (
                 <ProjectEmptyState onReset={handleReset} />
               ) : (

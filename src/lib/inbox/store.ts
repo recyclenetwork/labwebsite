@@ -54,29 +54,39 @@ export async function getInquiries(): Promise<Inquiry[]> {
   return [];
 }
 
+function stripHtmlTags(input: string): string {
+  return input.replace(/<[^>]*>?/gm, "").trim();
+}
+
 /**
  * Submit a new Contact Inquiry or Student Application
  */
 export async function submitInquiry(data: Partial<Inquiry>): Promise<Inquiry> {
+  const email = (data.email || "").trim().toLowerCase();
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!email || !emailRegex.test(email)) {
+    throw new Error("Please provide a valid email address.");
+  }
+
   const newId = data.id || `inq-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`;
   const now = new Date().toISOString();
 
   const completeInquiry: Inquiry = {
     id: newId,
-    name: (data.name || "Anonymous Visitor").trim().slice(0, 200),
-    email: (data.email || "no-email@provided.com").trim().slice(0, 250),
-    phone: (data.phone || "").trim().slice(0, 50),
-    organization: (data.organization || "").trim().slice(0, 300),
-    subject: (data.subject || "General Inquiry").trim().slice(0, 400),
-    category: (data.category || "General Inquiry").trim().slice(0, 150),
-    message: (data.message || "").trim().slice(0, 10000),
+    name: stripHtmlTags(data.name || "Anonymous Visitor").slice(0, 200),
+    email: email.slice(0, 250),
+    phone: stripHtmlTags(data.phone || "").slice(0, 50),
+    organization: stripHtmlTags(data.organization || "").slice(0, 300),
+    subject: stripHtmlTags(data.subject || "General Inquiry").slice(0, 400),
+    category: stripHtmlTags(data.category || "General Inquiry").slice(0, 150),
+    message: stripHtmlTags(data.message || "").slice(0, 10000),
     type: data.type || "contact_form",
     status: "new",
     created_at: now,
-    degree_level: (data.degree_level || "").trim().slice(0, 100),
-    university: (data.university || "").trim().slice(0, 300),
-    research_interest: (data.research_interest || "").trim().slice(0, 2000),
-    cover_letter: (data.cover_letter || "").trim().slice(0, 15000),
+    degree_level: stripHtmlTags(data.degree_level || "").slice(0, 100),
+    university: stripHtmlTags(data.university || "").slice(0, 300),
+    research_interest: stripHtmlTags(data.research_interest || "").slice(0, 2000),
+    cover_letter: stripHtmlTags(data.cover_letter || "").slice(0, 15000),
   };
 
   // Attempt Supabase insert

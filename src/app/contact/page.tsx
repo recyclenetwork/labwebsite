@@ -114,9 +114,35 @@ export default function ContactPage() {
   const [receiptId, setReceiptId] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
   const [openFaqIndex, setOpenFaqIndex] = useState<number | null>(0);
+  const [botTrap, setBotTrap] = useState("");
+  const [formInitTime] = useState<number>(() => Date.now());
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    // 1. Bot Honeypot Trap: If bots fill hidden input, silently simulate success without writing to DB
+    if (botTrap.trim()) {
+      setReceiptId(`inq-${Date.now().toString(36)}`);
+      setSubmitted(true);
+      return;
+    }
+
+    // 2. Submission speed check: Less than 1.5s indicates automated headless bot
+    if (Date.now() - formInitTime < 1500) {
+      setReceiptId(`inq-${Date.now().toString(36)}`);
+      setSubmitted(true);
+      return;
+    }
+
+    // 3. Client-side Rate Limiting (30-second cooldown per browser session)
+    if (typeof window !== "undefined") {
+      const lastSubmit = sessionStorage.getItem("last_contact_submission_ts");
+      if (lastSubmit && Date.now() - parseInt(lastSubmit, 10) < 30000) {
+        setErrorMessage("Please wait 30 seconds between message submissions to prevent duplicate requests.");
+        return;
+      }
+    }
+
     if (!formData.name.trim() || !formData.email.trim() || !formData.message.trim()) {
       setErrorMessage("Please complete all required fields (Name, Email, and Message).");
       return;
@@ -136,6 +162,10 @@ export default function ContactPage() {
         message: formData.message.trim(),
         type: formData.category.includes("Admission") ? "student_application" : "contact_form",
       });
+
+      if (typeof window !== "undefined") {
+        sessionStorage.setItem("last_contact_submission_ts", Date.now().toString());
+      }
 
       setReceiptId(result.id);
       setSubmitted(true);
@@ -308,6 +338,19 @@ export default function ContactPage() {
                             );
                           })}
                         </div>
+                      </div>
+
+                      {/* Anti-Spam Bot Trap (Invisible to humans, traps automated form-fill bots) */}
+                      <div className="opacity-0 pointer-events-none absolute -left-[9999px] h-0 overflow-hidden" aria-hidden="true">
+                        <label htmlFor="academic_hp_validation">Do not fill this field</label>
+                        <input
+                          id="academic_hp_validation"
+                          type="text"
+                          tabIndex={-1}
+                          autoComplete="off"
+                          value={botTrap}
+                          onChange={(e) => setBotTrap(e.target.value)}
+                        />
                       </div>
 
                       {/* 2. Sender Identity & Affiliation */}

@@ -1,5 +1,4 @@
-import { createClient as createSupabaseClient } from "@supabase/supabase-js";
-import type { Database } from "@/types/database.types";
+import { createClient } from "@/lib/supabase/client";
 import {
   Project,
   ProjectWithRelations,
@@ -15,14 +14,7 @@ import {
 } from "@/lib/storage/idb-storage";
 
 function getQueryClient() {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL || "https://ztgwpyoztzpvqnwoixuy.supabase.co";
-  const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "sb_publishable_9y2S6BL9Zlfd-qZCr4ui7Q_0h76uko4";
-  return createSupabaseClient<Database>(url, key, {
-    auth: {
-      persistSession: false,
-      autoRefreshToken: false,
-    },
-  });
+  return createClient();
 }
 
 const STORAGE_KEY = "ecotox_lab_projects_v2";
