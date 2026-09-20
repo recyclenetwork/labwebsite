@@ -24,7 +24,10 @@ import {
   Check,
   Globe,
   Layers,
-  Server
+  Server,
+  Image as ImageIcon,
+  UploadCloud,
+  RotateCcw
 } from "lucide-react";
 
 interface SupabaseStatus {
@@ -43,6 +46,7 @@ export default function AdminSettingsPage() {
   const [saved, setSaved] = useState(false);
   const [syncStatus, setSyncStatus] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const logoInputRef = useRef<HTMLInputElement>(null);
 
   // Supabase Status State
   const [dbStatus, setDbStatus] = useState<SupabaseStatus | null>(null);
@@ -55,10 +59,12 @@ export default function AdminSettingsPage() {
     department: "Department of Environmental Sciences",
     university: "Jahangirnagar University",
     contactEmail: "ecotox@juniv.edu",
-    piName: "Dr. Mohammad S. Kabir",
-    piEmail: "msk@juniv.edu",
+    piName: "Dr. Mohammad Mostafizur Rahman",
+    piEmail: "mostafizur@juniv.edu",
     supabaseUrl: process.env.NEXT_PUBLIC_SUPABASE_URL || "",
     publicSiteUrl: "",
+    logoUrl: "/icon.svg",
+    faviconUrl: "/icon.svg",
   });
 
   const cardBg = isLight ? "bg-white border-slate-200/90 shadow-xs" : "bg-[#0F172A] border-slate-800 shadow-md";
@@ -142,6 +148,39 @@ export default function AdminSettingsPage() {
       console.error("Import error:", err);
       alert("Failed to read or parse the backup file.");
     }
+  };
+
+  const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith("image/")) {
+      alert("Please select a valid image file (SVG, PNG, ICO, JPG, WebP).");
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      const dataUrl = reader.result as string;
+      setSettings((prev) => ({
+        ...prev,
+        logoUrl: dataUrl,
+        faviconUrl: dataUrl,
+      }));
+      setSyncStatus("Custom Lab Logo loaded into live preview! Click Save to apply.");
+      setTimeout(() => setSyncStatus(null), 4000);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleResetLogo = () => {
+    setSettings((prev) => ({
+      ...prev,
+      logoUrl: "/icon.svg",
+      faviconUrl: "/icon.svg",
+    }));
+    setSyncStatus("Reset to official LabEHE emblem!");
+    setTimeout(() => setSyncStatus(null), 3000);
   };
 
   return (
@@ -348,6 +387,91 @@ export default function AdminSettingsPage() {
                 <Upload className="w-3.5 h-3.5 text-emerald-500" />
                 <span>Import &amp; Sync Data (.json)</span>
               </button>
+            </div>
+          </div>
+
+          {/* Brand Identity & Lab Logo / Browser Favicon */}
+          <div className={`p-6 rounded-2xl border ${cardBg} space-y-5`}>
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
+              <h3 className="text-sm font-bold flex items-center gap-2 text-slate-900 dark:text-white">
+                <ImageIcon className="w-4 h-4 text-emerald-500" />
+                <span>Lab Brand Identity &amp; Browser Favicon</span>
+              </h3>
+              <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
+                Live Preview
+              </span>
+            </div>
+
+            <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
+              Customize the official emblem and browser tab icon (favicon) for the laboratory. This icon appears on browser tabs, bookmarks, mobile home screens, and public headers.
+            </p>
+
+            {/* Mock Browser Tab Preview */}
+            <div className="p-4 rounded-2xl bg-slate-100 dark:bg-[#070B12] border border-slate-200 dark:border-slate-800/80 space-y-2">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                Browser Tab Appearance
+              </span>
+              <div className="inline-flex items-center gap-2.5 px-4 py-2 rounded-t-xl bg-white dark:bg-[#0E1726] border-t border-x border-slate-300/80 dark:border-slate-700/80 text-xs font-medium text-slate-900 dark:text-white shadow-xs max-w-sm">
+                <img
+                  src={settings.logoUrl || "/icon.svg"}
+                  alt="Lab Logo Favicon"
+                  className="w-4 h-4 rounded object-contain shrink-0"
+                />
+                <span className="truncate text-xs font-semibold">
+                  Laboratory of Environmental Health and Ecotoxicology (LabEHE)
+                </span>
+              </div>
+            </div>
+
+            {/* Upload & Controls */}
+            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 pt-1">
+              <div className="w-16 h-16 rounded-2xl bg-slate-100 dark:bg-[#070B12] border border-slate-200 dark:border-slate-800 flex items-center justify-center p-2 shadow-inner shrink-0">
+                <img
+                  src={settings.logoUrl || "/icon.svg"}
+                  alt="Lab Logo Preview"
+                  className="w-full h-full object-contain rounded-lg"
+                />
+              </div>
+
+              <div className="space-y-2 flex-1 w-full">
+                <input
+                  type="file"
+                  ref={logoInputRef}
+                  accept=".svg,.png,.ico,.jpg,.webp"
+                  className="hidden"
+                  onChange={handleLogoUpload}
+                />
+
+                <div className="flex flex-wrap items-center gap-2.5">
+                  <button
+                    type="button"
+                    onClick={() => logoInputRef.current?.click()}
+                    className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold shadow transition cursor-pointer active:scale-95"
+                  >
+                    <UploadCloud className="w-3.5 h-3.5" />
+                    <span>Upload New Logo (SVG/PNG)</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={handleResetLogo}
+                    className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs font-semibold transition cursor-pointer active:scale-95"
+                  >
+                    <RotateCcw className="w-3 h-3 text-slate-400" />
+                    <span>Reset to Default</span>
+                  </button>
+                </div>
+
+                <div className="pt-1">
+                  <input
+                    type="text"
+                    value={settings.logoUrl}
+                    onChange={(e) => setSettings({ ...settings, logoUrl: e.target.value })}
+                    placeholder="/icon.svg or https://example.com/logo.png"
+                    className={`w-full px-3 py-1.5 rounded-lg border text-xs outline-none transition-all ${inputBg}`}
+                  />
+                </div>
+              </div>
             </div>
           </div>
 
