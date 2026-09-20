@@ -60,8 +60,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   // Dynamic Content Routes from Supabase
   const dynamicRoutes: MetadataRoute.Sitemap = [];
 
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "https://ztgwpyoztzpvqnwoixuy.supabase.co";
+  const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "sb_publishable_9y2S6BL9Zlfd-qZCr4ui7Q_0h76uko4";
 
   if (supabaseUrl && anonKey) {
     try {

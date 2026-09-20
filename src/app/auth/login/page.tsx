@@ -139,9 +139,30 @@ function LoginForm() {
       {mode === "login" ? (
         <form onSubmit={handleLogin} className="space-y-4">
           <div>
-            <label className="block text-xs font-medium text-slate-300 mb-1.5">
-              Authorized Email
-            </label>
+            <div className="flex items-center justify-between mb-1.5">
+              <label className="block text-xs font-medium text-slate-300">
+                Authorized Email
+              </label>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setEmail("labeheenvju@gmail.com")}
+                  className="text-[10px] text-emerald-400 hover:text-emerald-300 underline cursor-pointer"
+                  title="Official Lab Admin Email"
+                >
+                  labeheenvju@gmail.com
+                </button>
+                <span className="text-slate-600 text-[10px]">|</span>
+                <button
+                  type="button"
+                  onClick={() => setEmail("sasajeeb1@gmail.com")}
+                  className="text-[10px] text-emerald-400 hover:text-emerald-300 underline cursor-pointer"
+                  title="Administrator Account"
+                >
+                  sasajeeb1@gmail.com
+                </button>
+              </div>
+            </div>
             <div className="relative">
               <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
                 <Mail className="w-4 h-4" />
@@ -151,7 +172,7 @@ function LoginForm() {
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="admin@example.com"
+                placeholder="labeheenvju@gmail.com"
                 className="w-full pl-10 pr-4 py-2.5 bg-[#020F07]/90 border border-emerald-500/20 rounded-xl text-sm text-white placeholder-slate-500 focus:outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-400/20 transition-all"
               />
             </div>
@@ -214,9 +235,18 @@ function LoginForm() {
       ) : (
         <form onSubmit={handleForgotPassword} className="space-y-4">
           <div>
-            <label className="block text-xs font-medium text-slate-300 mb-1.5">
-              Admin Account Email
-            </label>
+            <div className="flex items-center justify-between mb-1.5">
+              <label className="block text-xs font-medium text-slate-300">
+                Admin Account Email
+              </label>
+              <button
+                type="button"
+                onClick={() => setEmail("labeheenvju@gmail.com")}
+                className="text-[10px] text-emerald-400 hover:text-emerald-300 underline cursor-pointer"
+              >
+                Use labeheenvju@gmail.com
+              </button>
+            </div>
             <div className="relative">
               <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
                 <Mail className="w-4 h-4" />
@@ -226,7 +256,7 @@ function LoginForm() {
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="admin@example.com"
+                placeholder="labeheenvju@gmail.com"
                 className="w-full pl-10 pr-4 py-2.5 bg-[#020F07]/90 border border-emerald-500/20 rounded-xl text-sm text-white placeholder-slate-500 focus:outline-none focus:border-emerald-400 focus:ring-2 focus:ring-emerald-400/20 transition-all"
               />
             </div>

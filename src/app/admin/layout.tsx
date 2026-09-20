@@ -79,7 +79,7 @@ function AdminLayoutContent({ children }: AdminLayoutProps) {
           return;
         }
 
-        setUserEmail(user.email || "sasajeeb1@gmail.com");
+        setUserEmail(user.email || "labeheenvju@gmail.com");
         setUserName(user.user_metadata?.full_name || user.email?.split("@")[0] || "Lab Administrator");
         setIsCheckingAuth(false);
       } catch (e) {
@@ -101,7 +101,7 @@ function AdminLayoutContent({ children }: AdminLayoutProps) {
             window.location.href = `/auth/login?redirectTo=${encodeURIComponent(pathname)}`;
           }
         } else if (session?.user) {
-          setUserEmail(session.user.email || "sasajeeb1@gmail.com");
+          setUserEmail(session.user.email || "labeheenvju@gmail.com");
           setUserName(session.user.user_metadata?.full_name || session.user.email?.split("@")[0] || "Lab Administrator");
           setIsCheckingAuth(false);
         }
