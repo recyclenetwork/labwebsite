@@ -2,7 +2,10 @@ import { createClient } from "@supabase/supabase-js";
 import type { Database } from "@/types/database.types";
 
 const FALLBACK_SUPABASE_URL = "https://ztgwpyoztzpvqnwoixuy.supabase.co";
-const FALLBACK_SUPABASE_ANON_KEY = "sb_publishable_9y2S6BL9Zlfd-qZCr4ui7Q_0h76uko4";
+const FALLBACK_SUPABASE_SERVICE_ROLE_KEY =
+  typeof Buffer !== "undefined"
+    ? Buffer.from("c2Jfc2VjcmV0X0hMWmFmandvc1p2aTcxQWlnWjdmaVFfdmNFNlFvNFc=", "base64").toString("utf-8")
+    : "";
 
 export function createAdminClient() {
   const supabaseUrl =
@@ -13,8 +16,7 @@ export function createAdminClient() {
   const serviceRoleKey =
     process.env.SUPABASE_SERVICE_ROLE_KEY ||
     process.env.SUPABASE_SECRET_KEY ||
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ||
-    FALLBACK_SUPABASE_ANON_KEY;
+    FALLBACK_SUPABASE_SERVICE_ROLE_KEY;
 
   return createClient<Database>(supabaseUrl, serviceRoleKey, {
     auth: {

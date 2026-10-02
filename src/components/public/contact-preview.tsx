@@ -139,14 +139,12 @@ export function ContactPreview() {
               {viewMode === "aerial" ? (
                 <>
                   <img
-                    src={landingData?.contactSection?.aerialImageSrc || "/images/jahangirnagar-campus.jpg"}
+                    src={landingData?.contactSection?.aerialImageSrc || "/images/contact-aerial.jpg"}
                     alt="Jahangirnagar University Campus aerial view"
                     onError={(e) => {
                       const target = e.currentTarget;
-                      if (!target.src.includes("jahangirnagar-campus.jpg")) {
-                        target.src = "/images/jahangirnagar-campus.jpg";
-                      } else {
-                        target.src = "/images/jahangirnagar-campus-map.jpg";
+                      if (!target.src.includes("contact-aerial.jpg")) {
+                        target.src = "/images/contact-aerial.jpg";
                       }
                     }}
                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 filter brightness-[0.95]"

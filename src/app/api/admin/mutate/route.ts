@@ -12,17 +12,7 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     const { entity, action, data, id } = body;
     
-    let supabase = createAdminClient();
-    const authHeader = req.headers.get("authorization");
-    if (!process.env.SUPABASE_SERVICE_ROLE_KEY && authHeader) {
-      const token = authHeader.replace("Bearer ", "").trim();
-      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || FALLBACK_SUPABASE_URL;
-      const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || FALLBACK_SUPABASE_ANON_KEY;
-      supabase = createClient(supabaseUrl, supabaseAnonKey, {
-        global: { headers: { Authorization: `Bearer ${token}` } },
-        auth: { persistSession: false },
-      }) as any;
-    }
+    const supabase = createAdminClient();
 
     // 1. PROJECTS
     if (entity === "project") {

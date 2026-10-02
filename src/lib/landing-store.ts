@@ -577,7 +577,7 @@ export function sanitizeLandingData(data: LandingContentData): LandingContentDat
   if (sanitized.contactSection && (!sanitized.contactSection.aerialImageSrc || sanitized.contactSection.aerialImageSrc.includes("unsplash.com"))) {
     sanitized.contactSection = {
       ...sanitized.contactSection,
-      aerialImageSrc: "/images/jahangirnagar-campus.jpg",
+      aerialImageSrc: "/images/contact-aerial.jpg",
     };
   }
 

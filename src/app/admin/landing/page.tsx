@@ -87,14 +87,17 @@ export default function AdminLandingManagerPage() {
     image_url: "/images/gallery/field-sampling.jpg",
   });
 
+  const userModifiedRef = React.useRef(false);
+  const [uploadingImage, setUploadingImage] = useState(false);
+
   useEffect(() => {
     pruneOversizedLocalStorage();
     const initial = getStoredLandingData();
-    if (initial) setFormData(initial);
+    if (initial && !userModifiedRef.current) setFormData(initial);
 
     idbGet<LandingContentData>("ecotox_landing_content_v2")
       .then((idbData) => {
-        if (idbData) {
+        if (idbData && !userModifiedRef.current) {
           setFormData(sanitizeLandingData(deepMerge(DEFAULT_LANDING_DATA, idbData)));
         }
       })
@@ -102,7 +105,7 @@ export default function AdminLandingManagerPage() {
 
     fetchLandingDataAsync()
       .then((remote) => {
-        if (remote) {
+        if (remote && !userModifiedRef.current) {
           setFormData(remote);
         }
       })
@@ -111,19 +114,43 @@ export default function AdminLandingManagerPage() {
 
   const handleImageUpload = async (file: File, callback: (url: string) => void) => {
     if (!file) return;
-    if (file.size > 15 * 1024 * 1024) {
-      alert("Please select an image file under 15MB.");
-      return;
+    setUploadingImage(true);
+    userModifiedRef.current = true;
+
+    try {
+      // 1. Primary: Upload directly to Supabase Storage bucket 'media'
+      const formPayload = new FormData();
+      formPayload.append("file", file);
+      formPayload.append("folder", "landing");
+
+      const res = await fetch("/api/admin/upload", {
+        method: "POST",
+        body: formPayload,
+      });
+
+      if (res.ok) {
+        const json = await res.json();
+        if (json.success && json.url) {
+          callback(json.url);
+          return;
+        }
+      }
+    } catch (netErr) {
+      console.warn("Storage upload endpoint warning, falling back to local compression:", netErr);
+    } finally {
+      setUploadingImage(false);
     }
+
+    // 2. Reliable Fallback: Safe local compression if network/server is offline
     try {
       const compressed = await safeCompressImage(file, {
-        maxWidth: 1200,
-        maxHeight: 1200,
-        quality: 0.84,
+        maxWidth: 1600,
+        maxHeight: 1600,
+        quality: 0.85,
       });
       callback(compressed);
     } catch (err) {
-      console.error("Failed to compress image:", err);
+      console.error("Failed to process image:", err);
       alert("Failed to process uploaded image.");
     }
   };
