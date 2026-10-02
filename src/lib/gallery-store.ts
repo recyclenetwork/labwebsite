@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { adminMutate } from "@/lib/supabase/admin-mutate";
 import { idbGet, idbSet, idbDelete, safeLocalStorageSet, safeLocalStorageGet } from "@/lib/storage/idb-storage";
 
 export interface GalleryItem {
@@ -68,7 +69,7 @@ export const DEFAULT_GALLERY_ITEMS: GalleryItem[] = [
     location: "Dhaleshwari River Estuary",
     date_text: "April 2026",
     description: "Real-time electrochemical water parameter profiling and bioindicator sample collection along industrial discharge points.",
-    image_url: "/images/hero-clean-bg.jpg",
+    image_url: "/images/slide-4-impact.jpg",
   },
 ];
 
@@ -98,7 +99,7 @@ export function getCategoryBadgeColor(category: string): string {
 }
 
 export function getStoredGalleryItems(): GalleryItem[] {
-  if (typeof window === "undefined") return [];
+  if (typeof window === "undefined") return DEFAULT_GALLERY_ITEMS;
   try {
     const raw = safeLocalStorageGet<GalleryItem[]>(LOCAL_STORAGE_KEY);
     if (raw && Array.isArray(raw) && raw.length > 0) {
@@ -107,11 +108,11 @@ export function getStoredGalleryItems(): GalleryItem[] {
   } catch (e) {
     console.error("Error reading gallery from storage:", e);
   }
-  return [];
+  return DEFAULT_GALLERY_ITEMS;
 }
 
 export async function getGalleryItemsAsync(): Promise<GalleryItem[]> {
-  if (typeof window === "undefined") return [];
+  if (typeof window === "undefined") return DEFAULT_GALLERY_ITEMS;
 
   // 1. Try Supabase
   try {
@@ -144,13 +145,13 @@ export async function getGalleryItemsAsync(): Promise<GalleryItem[]> {
     console.warn("IndexedDB gallery fetch error:", err);
   }
 
-  // 3. Fallback to localStorage only (no hardcoded defaults)
+  // 3. Fallback to localStorage, then DEFAULT_GALLERY_ITEMS
   const localData = safeLocalStorageGet<GalleryItem[]>(LOCAL_STORAGE_KEY);
   if (Array.isArray(localData) && localData.length > 0) {
     return localData;
   }
 
-  return [];
+  return DEFAULT_GALLERY_ITEMS;
 }
 
 export async function setStoredGalleryItems(items: GalleryItem[]): Promise<void> {
@@ -196,25 +197,21 @@ export async function saveGalleryItem(item: Partial<GalleryItem> & { title: stri
 
   await setStoredGalleryItems(updatedList);
 
-  // Attempt Supabase sync
+  // Sync to Supabase via server mutation (bypasses RLS)
   try {
-    const supabase = createClient();
-    const payload = {
-      title: updatedItem.title,
-      category: updatedItem.category,
-      location: updatedItem.location || null,
-      date_text: updatedItem.date_text || null,
-      description: updatedItem.description || null,
-      image_url: updatedItem.image_url,
-    };
-
-    if (item.id && !item.id.startsWith("gal-")) {
-      await (supabase as any).from("gallery_events").update(payload).eq("id", item.id);
-    } else {
-      await (supabase as any).from("gallery_events").insert([payload]);
-    }
-  } catch {
-    // Fallback succeeds locally in IDB
+    await adminMutate("gallery_event", "upsert", {
+      itemPayload: {
+        id: updatedItem.id,
+        title: updatedItem.title,
+        category: updatedItem.category,
+        location: updatedItem.location || null,
+        date_text: updatedItem.date_text || null,
+        description: updatedItem.description || null,
+        image_url: updatedItem.image_url,
+      },
+    });
+  } catch (err) {
+    console.warn("Gallery item sync error:", err);
   }
 
   return updatedItem;
@@ -226,10 +223,9 @@ export async function deleteGalleryItem(id: string): Promise<boolean> {
   await setStoredGalleryItems(next);
 
   try {
-    const supabase = createClient();
-    await (supabase as any).from("gallery_events").delete().eq("id", id);
-  } catch {
-    // Local delete succeeds
+    await adminMutate("gallery_event", "delete", undefined, id);
+  } catch (err) {
+    console.warn("Gallery delete error:", err);
   }
 
   return true;

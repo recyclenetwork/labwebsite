@@ -313,6 +313,60 @@ export async function POST(req: NextRequest) {
       }
     }
 
+    // 7. GALLERY EVENTS / MEDIA
+    if (entity === "gallery_event") {
+      if (action === "create" || action === "upsert") {
+        const item = data?.itemPayload || data || {};
+        const galleryPayload = {
+          id: item.id || id || `gal-${Date.now()}`,
+          title: item.title,
+          category: item.category || "Field Expedition",
+          location: item.location || null,
+          date_text: item.date_text || null,
+          description: item.description || null,
+          image_url: item.image_url,
+          badge_color: item.badge_color || null,
+          updated_at: new Date().toISOString(),
+        };
+
+        const { data: upserted, error } = await (supabase as any)
+          .from("gallery_events")
+          .upsert([galleryPayload])
+          .select()
+          .single();
+        if (error) throw error;
+        return NextResponse.json({ success: true, data: upserted });
+      }
+
+      if (action === "update") {
+        const item = data?.itemPayload || data || {};
+        const { error } = await (supabase as any)
+          .from("gallery_events")
+          .update({
+            title: item.title,
+            category: item.category,
+            location: item.location || null,
+            date_text: item.date_text || null,
+            description: item.description || null,
+            image_url: item.image_url,
+            badge_color: item.badge_color || null,
+            updated_at: new Date().toISOString(),
+          })
+          .eq("id", id || item.id);
+        if (error) throw error;
+        return NextResponse.json({ success: true });
+      }
+
+      if (action === "delete") {
+        const { error } = await (supabase as any)
+          .from("gallery_events")
+          .delete()
+          .eq("id", id);
+        if (error) throw error;
+        return NextResponse.json({ success: true });
+      }
+    }
+
     return NextResponse.json({ success: false, error: "Unknown entity or action" }, { status: 400 });
   } catch (err: any) {
     console.error("Admin mutation error:", err);

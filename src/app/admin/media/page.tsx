@@ -94,17 +94,37 @@ export default function AdminMediaPage() {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    if (file.size > 15 * 1024 * 1024) {
-      alert("Please select an image smaller than 15MB");
-      return;
+    setUploadingImage(true);
+
+    try {
+      // 1. Primary: Upload directly to Supabase Storage 'media' bucket
+      const formPayload = new FormData();
+      formPayload.append("file", file);
+      formPayload.append("folder", "gallery");
+
+      const res = await fetch("/api/admin/upload", {
+        method: "POST",
+        body: formPayload,
+      });
+
+      if (res.ok) {
+        const json = await res.json();
+        if (json.success && json.url) {
+          setFormState((prev) => ({ ...prev, image_url: json.url }));
+          setUploadingImage(false);
+          return;
+        }
+      }
+    } catch (netErr) {
+      console.warn("Storage upload error, using local compression fallback:", netErr);
     }
 
-    setUploadingImage(true);
+    // 2. Reliable Fallback: Safe local compression if network/server is offline
     try {
       const compressed = await safeCompressImage(file, {
-        maxWidth: 1200,
-        maxHeight: 1200,
-        quality: 0.84,
+        maxWidth: 1600,
+        maxHeight: 1600,
+        quality: 0.85,
       });
       setFormState((prev) => ({ ...prev, image_url: compressed }));
     } catch (err) {
