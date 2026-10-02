@@ -14,12 +14,16 @@ import { ResearchGallery } from "@/components/public/research-gallery";
 import { ContactPreview } from "@/components/public/contact-preview";
 import { Footer } from "@/components/public/footer";
 import { getLandingDataServer } from "@/lib/landing-server";
+import { getGalleryItemsServer } from "@/lib/gallery-server";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
 export default async function HomePage() {
-  const landingData = await getLandingDataServer();
+  const [landingData, galleryItems] = await Promise.all([
+    getLandingDataServer(),
+    getGalleryItemsServer(),
+  ]);
 
   return (
     <div className="min-h-screen bg-[var(--bg-page)] text-[var(--text-main)] transition-colors duration-300 flex flex-col justify-between">
@@ -58,10 +62,10 @@ export default async function HomePage() {
         <OpportunitiesCTA />
 
         {/* 11. Laboratory & Field Gallery Showcase */}
-        <ResearchGallery />
+        <ResearchGallery initialItems={galleryItems} initialLandingData={landingData} />
 
         {/* 12. Contact & Campus Location Preview */}
-        <ContactPreview />
+        <ContactPreview initialData={landingData} />
       </main>
 
       {/* 14. Global Footer */}

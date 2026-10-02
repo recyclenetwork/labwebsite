@@ -231,17 +231,23 @@ export async function deleteGalleryItem(id: string): Promise<boolean> {
   return true;
 }
 
-export function useGalleryItems() {
-  const [items, setItems] = useState<GalleryItem[]>([]);
-  const [loading, setLoading] = useState(true);
+export function useGalleryItems(initialItems?: GalleryItem[]) {
+  const [items, setItems] = useState<GalleryItem[]>(() => {
+    if (initialItems && initialItems.length > 0) return initialItems;
+    const stored = getStoredGalleryItems();
+    if (stored && stored.length > 0) return stored;
+    return DEFAULT_GALLERY_ITEMS;
+  });
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    // 1. Synchronously load from localStorage cache
+    // 1. Synchronously load from localStorage cache if available
     const initial = getStoredGalleryItems();
-    setItems(initial);
-    setLoading(false);
+    if (initial && initial.length > 0) {
+      setItems(initial);
+    }
 
-    // 2. Asynchronously load latest from IndexedDB / Remote
+    // 2. Asynchronously load latest from Remote (Supabase) / IndexedDB
     getGalleryItemsAsync().then((latest) => {
       if (Array.isArray(latest) && latest.length > 0) {
         setItems(latest);

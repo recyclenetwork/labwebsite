@@ -15,10 +15,10 @@ import {
   Layers,
 } from "lucide-react";
 import { SITE_CONFIG } from "@/constants";
-import { useLandingData } from "@/lib/landing-store";
+import { useLandingData, LandingContentData } from "@/lib/landing-store";
 
-export function ContactPreview() {
-  const { data: landingData } = useLandingData();
+export function ContactPreview({ initialData }: { initialData?: LandingContentData } = {}) {
+  const { data: landingData } = useLandingData(initialData);
   const [viewMode, setViewMode] = React.useState<"aerial" | "map">("aerial");
 
   return (

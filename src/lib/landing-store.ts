@@ -723,9 +723,14 @@ export function resetLandingData(): null {
   return null;
 }
 
-export function useLandingData() {
-  const [data, setData] = useState<LandingContentData>({} as LandingContentData);
-  const [loading, setLoading] = useState(true);
+export function useLandingData(initialData?: LandingContentData) {
+  const [data, setData] = useState<LandingContentData>(() => {
+    if (initialData && Object.keys(initialData).length > 0) return initialData;
+    const stored = getStoredLandingData();
+    if (stored) return stored;
+    return DEFAULT_LANDING_DATA;
+  });
+  const [loading, setLoading] = useState(!initialData);
 
   useEffect(() => {
     // 1. Synchronously load from localStorage cache for instant render

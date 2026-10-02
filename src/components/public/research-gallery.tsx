@@ -7,23 +7,36 @@ import {
   MapPin,
   Calendar,
 } from "lucide-react";
-import { useLandingData } from "@/lib/landing-store";
-import { useGalleryItems, getCategoryBadgeColor, GalleryItem } from "@/lib/gallery-store";
+import { useLandingData, LandingContentData } from "@/lib/landing-store";
+import { useGalleryItems, getCategoryBadgeColor, GalleryItem, DEFAULT_GALLERY_ITEMS } from "@/lib/gallery-store";
 
-export function ResearchGallery() {
-  const { data: landingData } = useLandingData();
-  const { items: galleryItems } = useGalleryItems();
+export function ResearchGallery({
+  initialItems,
+  initialLandingData,
+}: {
+  initialItems?: GalleryItem[];
+  initialLandingData?: LandingContentData;
+} = {}) {
+  const { data: landingData } = useLandingData(initialLandingData);
+  const { items: galleryItems } = useGalleryItems(initialItems);
   const [selectedItem, setSelectedItem] = React.useState<GalleryItem | null>(null);
   const [isPaused, setIsPaused] = React.useState(false);
 
+  // Active items fallback to initialItems or DEFAULT_GALLERY_ITEMS
+  const displayItems = React.useMemo(() => {
+    if (galleryItems && galleryItems.length > 0) return galleryItems;
+    if (initialItems && initialItems.length > 0) return initialItems;
+    return DEFAULT_GALLERY_ITEMS;
+  }, [galleryItems, initialItems]);
+
   // Multiply items to ensure continuous infinite scrolling across all screen widths
   const marqueeItems = React.useMemo(() => {
-    if (!galleryItems || galleryItems.length === 0) return [];
-    if (galleryItems.length < 4) {
-      return [...galleryItems, ...galleryItems, ...galleryItems, ...galleryItems];
+    if (!displayItems || displayItems.length === 0) return [];
+    if (displayItems.length < 4) {
+      return [...displayItems, ...displayItems, ...displayItems, ...displayItems];
     }
-    return [...galleryItems, ...galleryItems, ...galleryItems];
-  }, [galleryItems]);
+    return [...displayItems, ...displayItems, ...displayItems];
+  }, [displayItems]);
 
   return (
     <section className="py-20 lg:py-28 bg-[#040B07] text-white relative overflow-hidden transition-colors duration-300 w-full">
