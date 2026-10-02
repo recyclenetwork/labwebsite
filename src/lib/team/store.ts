@@ -5,6 +5,15 @@ import { idbGet, idbSet, idbDelete, safeLocalStorageSet, safeLocalStorageGet } f
 
 const LOCAL_STORAGE_KEY = "ecotox_lab_team_members_v1";
 
+let memoryTeamCache: TeamMember[] | null = null;
+let lastTeamFetchTime = 0;
+const TEAM_CACHE_TTL_MS = 30000; // 30 seconds
+
+export function invalidateTeamCache() {
+  memoryTeamCache = null;
+  lastTeamFetchTime = 0;
+}
+
 export function cleanTeamList(items: any[]): TeamMember[] {
   if (!Array.isArray(items)) return [];
   return items.filter((m) => {
@@ -22,13 +31,14 @@ export function cleanTeamList(items: any[]): TeamMember[] {
 }
 
 export function getCachedTeamMembers(): TeamMember[] {
+  if (memoryTeamCache && memoryTeamCache.length > 0) {
+    return memoryTeamCache;
+  }
   if (typeof window !== "undefined") {
     const cached = safeLocalStorageGet<TeamMember[]>(LOCAL_STORAGE_KEY);
-    if (Array.isArray(cached)) {
+    if (Array.isArray(cached) && cached.length > 0) {
       const cleaned = cleanTeamList(cached);
-      if (cleaned.length !== cached.length) {
-        safeLocalStorageSet(LOCAL_STORAGE_KEY, cleaned);
-      }
+      memoryTeamCache = cleaned;
       return cleaned;
     }
   }
@@ -45,7 +55,12 @@ export function getCachedPI(): TeamMember | null {
   );
 }
 
-export async function getTeamMembers(): Promise<TeamMember[]> {
+export async function getTeamMembers(forceRefresh = false): Promise<TeamMember[]> {
+  // If we already have fresh in-memory data, return immediately
+  if (!forceRefresh && memoryTeamCache && memoryTeamCache.length > 0 && (Date.now() - lastTeamFetchTime < TEAM_CACHE_TTL_MS)) {
+    return memoryTeamCache;
+  }
+
   let localMembersMap: Record<string, TeamMember> = {};
   let localList: TeamMember[] = [];
 
@@ -65,6 +80,9 @@ export async function getTeamMembers(): Promise<TeamMember[]> {
     localList.forEach((m) => {
       if (m?.id) localMembersMap[m.id] = m;
     });
+    if (localList.length > 0 && !memoryTeamCache) {
+      memoryTeamCache = localList;
+    }
   }
 
   // 1. Try Supabase first
@@ -132,11 +150,21 @@ export async function getTeamMembers(): Promise<TeamMember[]> {
             publications: local.publications || [],
             imageSrc: row.photo_url || row.image_url || local.imageSrc || "/images/slide-2-lab.jpg",
             imageAlt: row.name,
-            publicationsCount: row.publications_count !== null && row.publications_count !== undefined ? String(row.publications_count) : local.publicationsCount || "0",
-            citationsCount: row.citations_count !== null && row.citations_count !== undefined ? String(row.citations_count) : local.citationsCount || "0",
-            hIndex: row.h_index !== null && row.h_index !== undefined ? String(row.h_index) : local.hIndex || "0",
-            grantsCount: row.grants_count !== null && row.grants_count !== undefined ? String(row.grants_count) : local.grantsCount || "0",
-            advisingCount: row.advising_count !== null && row.advising_count !== undefined ? String(row.advising_count) : local.advisingCount || "0",
+            publicationsCount: row.publications_count !== null && row.publications_count !== undefined && Number(row.publications_count) > 0
+              ? Number(row.publications_count)
+              : (local.publicationsCount && Number(local.publicationsCount) > 0 ? Number(local.publicationsCount) : undefined),
+            citationsCount: row.citations_count !== null && row.citations_count !== undefined && Number(row.citations_count) > 0
+              ? Number(row.citations_count)
+              : (local.citationsCount && Number(local.citationsCount) > 0 ? Number(local.citationsCount) : undefined),
+            hIndex: row.h_index !== null && row.h_index !== undefined && Number(row.h_index) > 0
+              ? Number(row.h_index)
+              : (local.hIndex && Number(local.hIndex) > 0 ? Number(local.hIndex) : undefined),
+            grantsCount: row.grants_count !== null && row.grants_count !== undefined && Number(row.grants_count) > 0
+              ? Number(row.grants_count)
+              : (local.grantsCount && Number(local.grantsCount) > 0 ? Number(local.grantsCount) : undefined),
+            advisingCount: row.advising_count !== null && row.advising_count !== undefined && Number(row.advising_count) > 0
+              ? Number(row.advising_count)
+              : (local.advisingCount && Number(local.advisingCount) > 0 ? Number(local.advisingCount) : undefined),
             thesisTopic: row.thesis_topic || local.thesisTopic || "",
             advisor: row.advisor || local.advisor || "",
             expectedGraduation: row.expected_graduation || local.expectedGraduation || "",
@@ -156,7 +184,9 @@ export async function getTeamMembers(): Promise<TeamMember[]> {
         })
       );
 
-      // Cache locally
+      // Cache locally and in memory
+      memoryTeamCache = mapped;
+      lastTeamFetchTime = Date.now();
       await idbSet(LOCAL_STORAGE_KEY, mapped);
       safeLocalStorageSet(LOCAL_STORAGE_KEY, mapped);
       return mapped;
@@ -235,6 +265,8 @@ export async function saveTeamMember(member: Partial<TeamMember>): Promise<TeamM
   }
 
   // 1. Always save directly into IndexedDB (guaranteed success)
+  memoryTeamCache = updatedList;
+  lastTeamFetchTime = Date.now();
   if (typeof window !== "undefined") {
     await idbSet(LOCAL_STORAGE_KEY, updatedList);
     // 2. Mirror into localStorage safely with quota protection
@@ -320,6 +352,9 @@ export async function saveTeamMember(member: Partial<TeamMember>): Promise<TeamM
     try {
       const storedLanding = safeLocalStorageGet<any>("ecotox_landing_content_v2");
       if (storedLanding && typeof storedLanding === "object") {
+        const hasPubs = completeMember.publicationsCount && Number(completeMember.publicationsCount) > 0;
+        const hasCits = completeMember.citationsCount && Number(completeMember.citationsCount) > 0;
+        const hasH = completeMember.hIndex && Number(completeMember.hIndex) > 0;
         const updatedLanding = {
           ...storedLanding,
           piSection: {
@@ -330,9 +365,9 @@ export async function saveTeamMember(member: Partial<TeamMember>): Promise<TeamM
             institution: completeMember.affiliation,
             bioQuote: completeMember.quote || completeMember.bio || storedLanding.piSection?.bioQuote || "",
             imageSrc: completeMember.imageSrc,
-            publicationsCount: completeMember.publicationsCount ? `${completeMember.publicationsCount}+` : storedLanding.piSection?.publicationsCount || "74+",
-            citationsCount: completeMember.citationsCount ? `${completeMember.citationsCount.toLocaleString()}+` : storedLanding.piSection?.citationsCount || "2,840+",
-            hIndex: completeMember.hIndex ? `${completeMember.hIndex}` : storedLanding.piSection?.hIndex || "26",
+            publicationsCount: hasPubs ? `${completeMember.publicationsCount}+` : storedLanding.piSection?.publicationsCount || "120+",
+            citationsCount: hasCits ? `${Number(completeMember.citationsCount).toLocaleString()}+` : storedLanding.piSection?.citationsCount || "8,095+",
+            hIndex: hasH ? `${completeMember.hIndex}` : storedLanding.piSection?.hIndex || "44",
             scholarUrl: completeMember.googleScholarUrl || storedLanding.piSection?.scholarUrl || "",
           },
         };
@@ -354,6 +389,8 @@ export async function deleteTeamMember(id: string): Promise<boolean> {
   const current = await getTeamMembers();
   const updatedList = current.filter((m) => m.id !== id);
 
+  memoryTeamCache = updatedList;
+  lastTeamFetchTime = Date.now();
   if (typeof window !== "undefined") {
     await idbSet(LOCAL_STORAGE_KEY, updatedList);
     safeLocalStorageSet(LOCAL_STORAGE_KEY, updatedList);

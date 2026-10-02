@@ -324,16 +324,16 @@ export const DEFAULT_LANDING_DATA: LandingContentData = {
       "Recent scientific breakthroughs published in high-impact environmental toxicology and public health journals.",
   },
   piSection: {
-    name: "Prof. Dr. Md. Mostafizur Rahman",
-    designation: "Professor & Principal Investigator",
+    name: "Dr Mostafizur Rahman",
+    designation: "Principal investigator",
     department: "Department of Environmental Sciences",
     institution: "Jahangirnagar University",
     bioQuote:
       "Our mission is to translate high-resolution molecular and environmental data into actionable ecological safety thresholds and evidence-based public health protections.",
-    publicationsCount: "74+",
-    citationsCount: "2,840+",
-    hIndex: "26",
-    imageSrc: "",
+    publicationsCount: "120+",
+    citationsCount: "8095+",
+    hIndex: "44",
+    imageSrc: "/images/pi-mostafizur.jpg",
     scholarUrl: "https://scholar.google.com/citations?user=example-rahman",
     researchgateUrl: "https://www.researchgate.net/profile/Mostafizur-Rahman",
   },
@@ -375,16 +375,16 @@ export const DEFAULT_LANDING_DATA: LandingContentData = {
     phone: "+880 2-7791045 Ext. 1420",
     hours: "Sunday – Thursday: 9:00 AM – 5:00 PM (GMT+6)",
     mapEmbedUrl: "https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3648.5146059902644!2d90.26458537604313!3d23.882434583995834!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3755e9999407e997%3A0x868b4f17849e7799!2sJahangirnagar%20University!5e0!3m2!1sen!2sbd!4v1710000000000!5m2!1sen!2sbd",
-    aerialImageSrc: "/images/jahangirnagar-campus.jpg",
+    aerialImageSrc: "/images/contact-aerial.jpg",
   },
   aboutPage: {
     hero: {
       badge: "ABOUT THE LAB",
       headline: "Science with purpose.",
       supportingText: "Department of Environmental Sciences • Jahangirnagar University, Savar, Dhaka",
-      backgroundImageUrl: "/images/hero-clean-bg.jpg",
+      backgroundImageUrl: "/images/about-hero-bg.jpg",
       metrics: [
-        { label: "15+ Years Active Research" },
+        { label: "6+ Years Active Research" },
         { label: "140+ Peer-Reviewed Papers" },
         { label: "5,000+ Citations" },
       ],
@@ -399,7 +399,7 @@ export const DEFAULT_LANDING_DATA: LandingContentData = {
       rigorText: "ISO/EPA benchmarked analytical methods with certified standards and ultra-trace limits.",
       policyTitle: "Policy Translation",
       policyText: "Translating lab discoveries into environmental guidelines and public health protection.",
-      imageSrc: "/images/slide-2-lab.jpg",
+      imageSrc: "/images/about-whoweare.jpg",
       imageCaptionBadge: "DEPARTMENT OF ENVIRONMENTAL SCIENCES",
       imageCaptionTitle: "Faculty of Mathematical & Physical Sciences",
       imageCaptionSubtitle: "Jahangirnagar University Campus, Savar, Dhaka-1342, Bangladesh.",
@@ -438,24 +438,24 @@ export const DEFAULT_LANDING_DATA: LandingContentData = {
     ],
     galleryImages: [
       {
-        title: "Ultra-Trace Spectrometry & Chromatography",
+        title: "Microscopy & Molecular Work",
         category: "Laboratory Analysis",
-        image: "/images/gallery/analytical-instrumentation.jpg",
+        image: "/images/about-gallery-0.jpg",
       },
       {
-        title: "Microscopic Imaging & Micro-FTIR",
-        category: "Microscopy & Imaging",
-        image: "/images/gallery/microscopy-imaging.jpg",
+        title: "Aquatic Bioassay & Electrochemistry",
+        category: "Experimental Setup",
+        image: "/images/about-gallery-1.jpg",
       },
       {
-        title: "Molecular Bioassay & Toxicogenomics",
-        category: "Biological Exposure",
-        image: "/images/slide-3-analysis.jpg",
+        title: "Agricultural Research Plot",
+        category: "Field Expedition",
+        image: "/images/about-gallery-2.jpg",
       },
       {
         title: "Delta Aquatic Sampling & Field Coring",
         category: "Field Expedition",
-        image: "/images/gallery/field-sampling.jpg",
+        image: "/images/slide-1-field.jpg",
       },
       {
         title: "Environmental GIS & Hydrodynamics",
@@ -551,13 +551,25 @@ export function sanitizeLandingData(data: LandingContentData): LandingContentDat
     sanitized.aboutPage = about;
   }
 
-  // Sanitize PI section image: remove legacy placeholders
+  // Sanitize PI section image and counter values
   if (sanitized.piSection) {
     if (sanitized.piSection.imageSrc === "/images/hero-scientist.jpg" || sanitized.piSection.imageSrc?.includes("photo-1534528741775-53994a69daeb")) {
       sanitized.piSection = {
         ...sanitized.piSection,
         imageSrc: "",
       };
+    }
+    const pub = String(sanitized.piSection.publicationsCount || "").trim();
+    const cit = String(sanitized.piSection.citationsCount || "").trim();
+    const hIn = String(sanitized.piSection.hIndex || "").trim();
+    if (!pub || pub === "0" || pub === "0+") {
+      sanitized.piSection.publicationsCount = "120+";
+    }
+    if (!cit || cit === "0" || cit === "0+") {
+      sanitized.piSection.citationsCount = "8,095+";
+    }
+    if (!hIn || hIn === "0") {
+      sanitized.piSection.hIndex = "44";
     }
   }
 

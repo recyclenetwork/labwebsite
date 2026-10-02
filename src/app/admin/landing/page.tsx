@@ -7,7 +7,9 @@ import {
   LandingContentData,
   DEFAULT_LANDING_DATA,
   getStoredLandingData,
+  fetchLandingDataAsync,
   saveLandingData,
+  saveLandingDataAsync,
   resetLandingData,
   deepMerge,
   sanitizeLandingData,
@@ -97,6 +99,14 @@ export default function AdminLandingManagerPage() {
         }
       })
       .catch(() => {});
+
+    fetchLandingDataAsync()
+      .then((remote) => {
+        if (remote) {
+          setFormData(remote);
+        }
+      })
+      .catch(() => {});
   }, []);
 
   const handleImageUpload = async (file: File, callback: (url: string) => void) => {
@@ -118,12 +128,15 @@ export default function AdminLandingManagerPage() {
     }
   };
 
-  const handleSave = (e?: React.FormEvent) => {
+  const [saving, setSaving] = useState(false);
+
+  const handleSave = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
+    setSaving(true);
     try {
-      const success = saveLandingData(formData);
+      const success = await saveLandingDataAsync(formData);
       if (success) {
-        setSavedStatus("Homepage content successfully saved and synchronized!");
+        setSavedStatus("Homepage content successfully saved and synchronized across all devices!");
         setTimeout(() => setSavedStatus(null), 4000);
       } else {
         alert("Could not save homepage content due to browser storage limitations. Please ensure images are appropriately sized.");
@@ -131,6 +144,8 @@ export default function AdminLandingManagerPage() {
     } catch (err) {
       console.error("Error saving landing data:", err);
       alert("An unexpected error occurred while saving.");
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -1639,6 +1654,9 @@ export default function AdminLandingManagerPage() {
                         const members = await getTeamMembers();
                         const piMember = members.find((m) => m.category === "pi") || members[0];
                         if (piMember) {
+                          const hasPubs = piMember.publicationsCount && Number(piMember.publicationsCount) > 0;
+                          const hasCits = piMember.citationsCount && Number(piMember.citationsCount) > 0;
+                          const hasH = piMember.hIndex && Number(piMember.hIndex) > 0;
                           setFormData({
                             ...formData,
                             piSection: {
@@ -1649,9 +1667,9 @@ export default function AdminLandingManagerPage() {
                               institution: piMember.affiliation || "Jahangirnagar University",
                               bioQuote: piMember.quote || piMember.bio || formData.piSection.bioQuote,
                               imageSrc: piMember.imageSrc || formData.piSection.imageSrc,
-                              publicationsCount: piMember.publicationsCount ? `${piMember.publicationsCount}+` : formData.piSection.publicationsCount,
-                              citationsCount: piMember.citationsCount ? `${piMember.citationsCount.toLocaleString()}+` : "2,840+",
-                              hIndex: piMember.hIndex ? `${piMember.hIndex}` : "26",
+                              publicationsCount: hasPubs ? `${piMember.publicationsCount}+` : formData.piSection.publicationsCount || "120+",
+                              citationsCount: hasCits ? `${Number(piMember.citationsCount).toLocaleString()}+` : formData.piSection.citationsCount || "8,095+",
+                              hIndex: hasH ? `${piMember.hIndex}` : formData.piSection.hIndex || "44",
                               scholarUrl: piMember.googleScholarUrl || formData.piSection.scholarUrl,
                             },
                           });
@@ -1802,7 +1820,7 @@ export default function AdminLandingManagerPage() {
                     <label className={`block text-xs ${labelText} mb-1`}>Citations Counter</label>
                     <input
                       type="text"
-                      value={formData.piSection.citationsCount || "2,840+"}
+                      value={formData.piSection.citationsCount || "8,095+"}
                       onChange={(e) =>
                         setFormData({
                           ...formData,
@@ -1816,7 +1834,7 @@ export default function AdminLandingManagerPage() {
                     <label className={`block text-xs ${labelText} mb-1`}>h-Index Counter</label>
                     <input
                       type="text"
-                      value={formData.piSection.hIndex || "26"}
+                      value={formData.piSection.hIndex || "44"}
                       onChange={(e) =>
                         setFormData({
                           ...formData,

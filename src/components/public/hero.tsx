@@ -27,6 +27,7 @@ interface HeroData {
 
 interface HeroProps {
   data?: HeroData;
+  initialData?: any;
 }
 
 interface WorkflowStage {
@@ -56,7 +57,7 @@ const WORKFLOW_STAGES: WorkflowStage[] = [
     highlightWord: "surrounds us.",
     subheadline: "From environmental exposure to biological response.",
     imageSrc: "/images/slide-1-field.jpg",
-    imageAlt: "Environmental scientist collecting water sample in pristine mountain watershed",
+    imageAlt: "Amar Ekushey Monument at Jahangirnagar University campus",
     associatedNodeId: "environment",
   },
   {
@@ -70,7 +71,7 @@ const WORKFLOW_STAGES: WorkflowStage[] = [
     highlightWord: "cellular risk.",
     subheadline: "High-resolution micro-FTIR, chemical fate, and sub-lethal bioassays.",
     imageSrc: "/images/slide-2-lab.jpg",
-    imageAlt: "Scientist performing analytical spectrometry in modern molecular toxicology lab",
+    imageAlt: "Scientist performing analytical microscopy in modern toxicology lab",
     associatedNodeId: "contaminant",
   },
   {
@@ -84,7 +85,7 @@ const WORKFLOW_STAGES: WorkflowStage[] = [
     highlightWord: "clear evidence.",
     subheadline: "Predictive toxicogenomic modeling and multi-scale ecological datasets.",
     imageSrc: "/images/slide-3-analysis.jpg",
-    imageAlt: "Researchers analyzing global ecotoxicological data and mapping screens",
+    imageAlt: "Researcher taking notes beside laboratory bioassay and electrochemistry setup",
     associatedNodeId: "response",
   },
   {
@@ -98,7 +99,7 @@ const WORKFLOW_STAGES: WorkflowStage[] = [
     highlightWord: "resilient ecosystems.",
     subheadline: "Translating empirical discoveries into actionable standards and remediation.",
     imageSrc: "/images/slide-4-impact.jpg",
-    imageAlt: "Pristine restored watershed river valley and thriving ecosystem canopy",
+    imageAlt: "Field research plot investigating environmental remediation and soil health",
     associatedNodeId: "health",
   },
 ];
@@ -149,16 +150,21 @@ const ARC_NODES = [
   },
 ];
 
-export function Hero({ data }: HeroProps) {
+export function Hero({ data, initialData }: HeroProps) {
   const { data: landingData } = useLandingData();
-  const currentStages =
+  const activeHero =
     landingData?.hero?.stages && landingData.hero.stages.length > 0
-      ? landingData.hero.stages
+      ? landingData.hero
+      : initialData?.hero || initialData;
+
+  const currentStages: WorkflowStage[] =
+    activeHero?.stages && activeHero.stages.length > 0
+      ? (activeHero.stages as WorkflowStage[])
       : WORKFLOW_STAGES;
 
-  const currentArcNodes =
-    landingData?.hero?.arcNodes && landingData.hero.arcNodes.length > 0
-      ? landingData.hero.arcNodes.map((n, idx) => ({
+  const currentArcNodes: typeof ARC_NODES =
+    activeHero?.arcNodes && activeHero.arcNodes.length > 0
+      ? activeHero.arcNodes.map((n: any, idx: number) => ({
           id: n.id,
           label: n.label,
           desc: n.desc,

@@ -56,17 +56,17 @@ import {
   updateResearchArea,
   deleteResearchArea,
 } from "@/lib/research-areas/store";
-import { getTeamMembers, saveTeamMember } from "@/lib/team/store";
+import { getTeamMembers, getCachedTeamMembers, saveTeamMember } from "@/lib/team/store";
 import { TeamMember, TeamCategory } from "@/lib/team/types";
 
 export default function AdminProjectsPage() {
   const { theme } = useAdminTheme();
   const isLight = theme === "light";
 
-  const [projects, setProjects] = useState<ProjectWithRelations[]>([]);
-  const [researchAreas, setResearchAreas] = useState<ProjectResearchArea[]>(getAllResearchAreas());
-  const [teamResearchers, setTeamResearchers] = useState<TeamMember[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [projects, setProjects] = useState<ProjectWithRelations[]>(() => getLocalProjects());
+  const [researchAreas, setResearchAreas] = useState<ProjectResearchArea[]>(() => getAllResearchAreas());
+  const [teamResearchers, setTeamResearchers] = useState<TeamMember[]>(() => getCachedTeamMembers());
+  const [isLoading, setIsLoading] = useState(() => getLocalProjects().length === 0);
   const [isPending, startTransition] = useTransition();
 
   // Dynamic Thematic Research Focus Areas
@@ -151,12 +151,16 @@ export default function AdminProjectsPage() {
   }, [teamResearchers]);
 
   // Load Projects & Team from DB / Access layer
-  const loadData = async () => {
-    setIsLoading(true);
+  const loadData = async (forceRefresh: boolean | any = false) => {
+    const isForce = typeof forceRefresh === "boolean" ? forceRefresh : false;
+    const cached = getLocalProjects();
+    if (cached.length === 0) {
+      setIsLoading(true);
+    }
     try {
       const [allProjects, teamList] = await Promise.all([
-        getPublishedProjects({}, true), // includeDrafts = true
-        getTeamMembers(),
+        getPublishedProjects({}, true, isForce), // includeDrafts = true
+        getTeamMembers(isForce),
       ]);
       setProjects(allProjects);
       setTeamResearchers(teamList);
@@ -172,7 +176,11 @@ export default function AdminProjectsPage() {
     loadData();
 
     // Listen to local project, research area, and team updates across browser tabs
-    const handleUpdate = () => loadData();
+    const handleUpdate = () => {
+      const cached = getLocalProjects();
+      if (cached.length > 0) setProjects(cached);
+      loadData();
+    };
     const handleAreasUpdate = () => setResearchAreas(getAllResearchAreas());
     const handleTeamUpdate = async () => {
       const refreshed = await getTeamMembers();

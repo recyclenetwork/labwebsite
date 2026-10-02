@@ -45,10 +45,10 @@ import {
   Lock,
   Star,
   Upload,
-  Info
+  Info,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
-import { getTeamMembers, saveTeamMember, deleteTeamMember } from "@/lib/team/store";
+import { getTeamMembers, getCachedTeamMembers, saveTeamMember, deleteTeamMember } from "@/lib/team/store";
 import { TeamMember, TeamCategory, MemberPublication } from "@/lib/team/types";
 import { TEAM_CATEGORIES_META } from "@/lib/team/seed-data";
 import { safeCompressImage } from "@/lib/image-compression";
@@ -58,8 +58,8 @@ export default function AdminTeamPage() {
   const { theme } = useAdminTheme();
   const isLight = theme === "light";
 
-  const [members, setMembers] = useState<TeamMember[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [members, setMembers] = useState<TeamMember[]>(() => getCachedTeamMembers());
+  const [isLoading, setIsLoading] = useState(() => getCachedTeamMembers().length === 0);
   const [searchQuery, setSearchQuery] = useState("");
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
   const [statusFilter, setStatusFilter] = useState<string>("all");
@@ -142,10 +142,14 @@ export default function AdminTeamPage() {
     role: "First Author",
   });
 
-  const loadData = async () => {
-    setIsLoading(true);
+  const loadData = async (forceRefresh: boolean | any = false) => {
+    const isForce = typeof forceRefresh === "boolean" ? forceRefresh : false;
+    const cached = getCachedTeamMembers();
+    if (cached.length === 0) {
+      setIsLoading(true);
+    }
     try {
-      const data = await getTeamMembers();
+      const data = await getTeamMembers(isForce);
       setMembers(data);
     } catch (e) {
       console.error("Failed to load team members", e);
@@ -157,6 +161,15 @@ export default function AdminTeamPage() {
   useEffect(() => {
     pruneOversizedLocalStorage();
     loadData();
+
+    const handleUpdate = () => {
+      const cached = getCachedTeamMembers();
+      if (cached.length > 0) setMembers(cached);
+      loadData();
+    };
+
+    window.addEventListener("team-members-updated", handleUpdate);
+    return () => window.removeEventListener("team-members-updated", handleUpdate);
   }, []);
 
   // Filtered members list

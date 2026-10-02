@@ -57,9 +57,16 @@ export function cleanProjectList(projects: any[]): ProjectWithRelations[] {
 
 // In-memory / client-side cache state — starts empty, populated strictly from Supabase or real user input
 let memoryProjects: ProjectWithRelations[] = [];
+let lastProjectsFetchTime = 0;
+const PROJECTS_CACHE_TTL_MS = 30000;
+
+export function invalidateProjectsCache() {
+  lastProjectsFetchTime = 0;
+}
 
 export function getLocalProjects(): ProjectWithRelations[] {
   if (typeof window === "undefined") return cleanProjectList(memoryProjects);
+  if (memoryProjects.length > 0) return memoryProjects;
   try {
     const raw = localStorage.getItem(STORAGE_KEY) || localStorage.getItem("lab_projects_store");
     if (raw) {
@@ -83,6 +90,7 @@ export function getLocalProjects(): ProjectWithRelations[] {
 export function saveLocalProjects(projects: ProjectWithRelations[], dispatchUpdate: boolean = true): void {
   const cleaned = cleanProjectList(projects);
   memoryProjects = cleaned;
+  lastProjectsFetchTime = Date.now();
   if (typeof window !== "undefined") {
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(cleaned));
@@ -124,8 +132,12 @@ export async function getResearchAreas(): Promise<ProjectResearchArea[]> {
  */
 export async function getPublishedProjects(
   filters: ProjectFilterParams = {},
-  includeDrafts: boolean = false
+  includeDrafts: boolean = false,
+  forceRefresh: boolean = false
 ): Promise<ProjectWithRelations[]> {
+  if (!forceRefresh && memoryProjects.length > 0 && (Date.now() - lastProjectsFetchTime < PROJECTS_CACHE_TTL_MS)) {
+    return filterLocalProjects(memoryProjects, filters, includeDrafts);
+  }
   try {
     const supabase = getQueryClient();
     let query = supabase
@@ -423,28 +435,41 @@ export async function getProjectBySlug(
   }
 }
 
+export function computeProjectStats(all: ProjectWithRelations[]): ProjectStats {
+  const ongoing = all.filter((p) => p.status === "ongoing").length;
+  const completed = all.filter((p) => p.status === "completed").length;
+  
+  // Calculate total unique partners / collaborators across projects
+  const partnerSet = new Set<string>();
+  all.forEach((p) => {
+    (p.collaborators || []).forEach((c) => {
+      if (c && (c.name || c.institution)) partnerSet.add(c.name || c.institution);
+    });
+    if (p.funding_org) partnerSet.add(p.funding_org);
+  });
+
+  return {
+    totalProjects: all.length,
+    ongoingCount: ongoing,
+    completedCount: completed,
+    partnersCount: Math.max(partnerSet.size, 10),
+  };
+}
+
 /**
  * Fetch dynamic statistics computed from the database
  */
-export async function getProjectStats(): Promise<ProjectStats> {
+export async function getProjectStats(providedProjects?: ProjectWithRelations[]): Promise<ProjectStats> {
+  if (providedProjects && providedProjects.length > 0) {
+    return computeProjectStats(providedProjects);
+  }
+  const cached = getLocalProjects();
+  if (cached && cached.length > 0) {
+    return computeProjectStats(cached);
+  }
   try {
     const all = await getPublishedProjects({}, false);
-    const ongoing = all.filter((p) => p.status === "ongoing").length;
-    const completed = all.filter((p) => p.status === "completed").length;
-    
-    // Calculate total unique partners / collaborators across projects
-    const partnerSet = new Set<string>();
-    all.forEach((p) => {
-      p.collaborators.forEach((c) => partnerSet.add(c.name || c.institution));
-      if (p.funding_org) partnerSet.add(p.funding_org);
-    });
-
-    return {
-      totalProjects: all.length,
-      ongoingCount: ongoing,
-      completedCount: completed,
-      partnersCount: Math.max(partnerSet.size, 10),
-    };
+    return computeProjectStats(all);
   } catch {
     return {
       totalProjects: 0,

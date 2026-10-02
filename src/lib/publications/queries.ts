@@ -9,6 +9,15 @@ import {
 
 const LOCAL_STORAGE_KEY = "lab_publications_override_v2";
 
+let memoryPubsCache: PublicationWithRelations[] | null = null;
+let lastPubsFetchTime = 0;
+const PUBS_CACHE_TTL_MS = 30000;
+
+export function invalidatePublicationsCache() {
+  memoryPubsCache = null;
+  lastPubsFetchTime = 0;
+}
+
 export function cleanPublicationList(items: any[]): PublicationWithRelations[] {
   if (!Array.isArray(items)) return [];
   return items.filter((p) => {
@@ -38,6 +47,9 @@ export function cleanPublicationList(items: any[]): PublicationWithRelations[] {
  * Get local in-browser publication override storage (for local dev resilience)
  */
 export function getLocalPublications(): PublicationWithRelations[] {
+  if (memoryPubsCache && memoryPubsCache.length > 0) {
+    return memoryPubsCache;
+  }
   if (typeof window === "undefined") return [];
   try {
     const raw = localStorage.getItem(LOCAL_STORAGE_KEY);
@@ -46,6 +58,7 @@ export function getLocalPublications(): PublicationWithRelations[] {
     }
     const parsed = JSON.parse(raw);
     const cleaned = cleanPublicationList(parsed);
+    memoryPubsCache = cleaned;
     if (cleaned.length !== (Array.isArray(parsed) ? parsed.length : 0)) {
       saveLocalPublications(cleaned, false);
     }
@@ -56,9 +69,11 @@ export function getLocalPublications(): PublicationWithRelations[] {
 }
 
 export function saveLocalPublications(items: PublicationWithRelations[], dispatchUpdate: boolean = true) {
+  const cleaned = cleanPublicationList(items);
+  memoryPubsCache = cleaned;
+  lastPubsFetchTime = Date.now();
   if (typeof window === "undefined") return;
   try {
-    const cleaned = cleanPublicationList(items);
     localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(cleaned));
     if (dispatchUpdate) {
       window.dispatchEvent(new Event("lab_publications_updated"));
@@ -73,8 +88,14 @@ export function saveLocalPublications(items: PublicationWithRelations[], dispatc
  */
 export async function getPublishedPublications(
   filters: PublicationFilterParams = {},
-  includeDrafts = false
+  includeDrafts = false,
+  forceRefresh = false
 ): Promise<PublicationWithRelations[]> {
+  // If in-memory cache is fresh and we don't force refresh, apply filters directly!
+  if (!forceRefresh && memoryPubsCache && memoryPubsCache.length > 0 && (Date.now() - lastPubsFetchTime < PUBS_CACHE_TTL_MS)) {
+    return applyFilters(memoryPubsCache, filters, includeDrafts);
+  }
+
   const localList = getLocalPublications();
 
   try {
@@ -291,25 +312,36 @@ export async function getPublicationBySlug(slug: string): Promise<PublicationWit
   return matched || null;
 }
 
-/**
- * Compute Publication stats
- */
-export async function getPublicationStats(): Promise<PublicationStats> {
-  const all = await getPublishedPublications({}, true);
+export function computePublicationStats(all: PublicationWithRelations[]): PublicationStats {
   const totalPublications = all.length;
   const totalCitations = all.reduce((sum, p) => sum + (p.citation_count || 0), 0);
-  const topImpactFactor = Math.max(...all.map((p) => p.impact_factor || 0), 13.6);
+  const topImpactFactor = all.length > 0 ? Math.max(...all.map((p) => p.impact_factor || 0), 0) : 13.6;
   const q1JournalCount = all.filter((p) => p.quartile === "Q1" || (p.impact_factor && p.impact_factor >= 5)).length;
-  const journalCount = new Set(all.map((p) => p.journal)).size;
+  const journalCount = new Set(all.map((p) => p.journal).filter(Boolean)).size;
 
   return {
     totalPublications,
     totalCitations,
-    topImpactFactor: Number(topImpactFactor.toFixed(1)),
+    topImpactFactor: Number((topImpactFactor || 13.6).toFixed(1)),
     q1JournalCount,
     journalCount,
     openAccessRatio: "94%",
   };
+}
+
+/**
+ * Compute Publication stats
+ */
+export async function getPublicationStats(providedPubs?: PublicationWithRelations[]): Promise<PublicationStats> {
+  if (providedPubs && providedPubs.length > 0) {
+    return computePublicationStats(providedPubs);
+  }
+  const cached = getLocalPublications();
+  if (cached && cached.length > 0) {
+    return computePublicationStats(cached);
+  }
+  const all = await getPublishedPublications({}, true);
+  return computePublicationStats(all);
 }
 
 /**

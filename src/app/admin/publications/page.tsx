@@ -49,6 +49,7 @@ import {
 } from "@/lib/publications/types";
 import {
   getPublishedPublications,
+  getLocalPublications,
   getPublicationStats
 } from "@/lib/publications/queries";
 import {
@@ -81,8 +82,8 @@ export default function AdminPublicationsPage() {
   const { theme } = useAdminTheme();
   const isLight = theme === "light";
 
-  const [publications, setPublications] = useState<PublicationWithRelations[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [publications, setPublications] = useState<PublicationWithRelations[]>(() => getLocalPublications());
+  const [isLoading, setIsLoading] = useState(() => getLocalPublications().length === 0);
   const [isPending, startTransition] = useTransition();
 
   // Research Areas dynamic list
@@ -154,12 +155,16 @@ export default function AdminPublicationsPage() {
   const [formData, setFormData] = useState<PublicationFormData>(initialFormState);
 
   // Load Publications from DB / Storage
-  const loadData = async () => {
-    setIsLoading(true);
+  const loadData = async (forceRefresh: boolean | any = false) => {
+    const isForce = typeof forceRefresh === "boolean" ? forceRefresh : false;
+    const cached = getLocalPublications();
+    if (cached.length === 0) {
+      setIsLoading(true);
+    }
     try {
       const [allPubs, members] = await Promise.all([
-        getPublishedPublications({}, true), // include drafts
-        getTeamMembers(),
+        getPublishedPublications({}, true, isForce), // include drafts
+        getTeamMembers(isForce),
       ]);
       setPublications(allPubs);
       if (members && members.length > 0) setTeamMembers(members);
@@ -173,8 +178,11 @@ export default function AdminPublicationsPage() {
   useEffect(() => {
     loadData();
 
-    // Listen to local publication updates across tabs
-    const handleUpdate = () => loadData();
+    const handleUpdate = () => {
+      const cached = getLocalPublications();
+      if (cached.length > 0) setPublications(cached);
+      loadData();
+    };
     const handleAreasUpdate = () => setAllResearchAreas(getAllResearchAreas());
 
     window.addEventListener("lab_publications_updated", handleUpdate);

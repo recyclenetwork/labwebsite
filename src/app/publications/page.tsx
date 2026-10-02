@@ -38,24 +38,23 @@ import {
 import { Navbar } from "@/components/public/navbar";
 import { Footer } from "@/components/public/footer";
 import { PublicationWithRelations, PublicationType } from "@/lib/publications/types";
-import { getPublishedPublications, getPublicationStats, getAvailableYears } from "@/lib/publications/queries";
+import {
+  getPublishedPublications,
+  getLocalPublications,
+  getPublicationStats,
+  computePublicationStats,
+  getAvailableYears
+} from "@/lib/publications/queries";
 import { getAllResearchAreas } from "@/lib/research-areas/store";
 import { getTeamMembers, getCachedTeamMembers } from "@/lib/team/store";
 import { DeveloperWatermark, isCreatorQuery } from "@/components/public/developer-watermark";
 
 export default function PublicationsPage() {
-  const [publications, setPublications] = useState<PublicationWithRelations[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [publications, setPublications] = useState<PublicationWithRelations[]>(() => getLocalPublications());
+  const [isLoading, setIsLoading] = useState(() => getLocalPublications().length === 0);
   const [researchAreas, setResearchAreas] = useState<any[]>(() => getAllResearchAreas());
   const [teamMembers, setTeamMembers] = useState<any[]>(() => getCachedTeamMembers());
-  const [stats, setStats] = useState({
-    totalPublications: 0,
-    totalCitations: 0,
-    topImpactFactor: 0,
-    q1JournalCount: 0,
-    journalCount: 0,
-    openAccessRatio: "94%",
-  });
+  const [stats, setStats] = useState(() => computePublicationStats(getLocalPublications()));
 
   // Filter & Search states
   const [searchQuery, setSearchQuery] = useState("");
@@ -83,18 +82,18 @@ export default function PublicationsPage() {
   const [copiedDoiId, setCopiedDoiId] = useState<string | null>(null);
 
   // Load data
-  const loadData = async () => {
-    setIsLoading(true);
+  const loadData = async (forceRefresh = false) => {
+    const cached = getLocalPublications();
+    if (cached.length === 0) {
+      setIsLoading(true);
+    }
     try {
-      const [pubs, statData, areas, members] = await Promise.all([
-        getPublishedPublications({}, false),
-        getPublicationStats(),
-        Promise.resolve(getAllResearchAreas()),
-        getTeamMembers(),
+      const [pubs, members] = await Promise.all([
+        getPublishedPublications({}, false, forceRefresh),
+        getTeamMembers(forceRefresh),
       ]);
       setPublications(pubs);
-      setStats(statData);
-      if (areas && areas.length > 0) setResearchAreas(areas);
+      setStats(computePublicationStats(pubs));
       if (members && members.length > 0) setTeamMembers(members);
     } catch (err) {
       console.error("Error loading publications:", err);
@@ -107,7 +106,14 @@ export default function PublicationsPage() {
     loadData();
 
     // Listen to local publication updates from admin
-    const handleUpdate = () => loadData();
+    const handleUpdate = () => {
+      const cached = getLocalPublications();
+      if (cached.length > 0) {
+        setPublications(cached);
+        setStats(computePublicationStats(cached));
+      }
+      loadData();
+    };
     window.addEventListener("lab_publications_updated", handleUpdate);
     return () => window.removeEventListener("lab_publications_updated", handleUpdate);
   }, []);

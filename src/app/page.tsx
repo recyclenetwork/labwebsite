@@ -13,11 +13,14 @@ import { OpportunitiesCTA } from "@/components/public/opportunities-cta";
 import { ResearchGallery } from "@/components/public/research-gallery";
 import { ContactPreview } from "@/components/public/contact-preview";
 import { Footer } from "@/components/public/footer";
+import { getLandingDataServer } from "@/lib/landing-server";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
-export default function HomePage() {
+export default async function HomePage() {
+  const landingData = await getLandingDataServer();
+
   return (
     <div className="min-h-screen bg-[var(--bg-page)] text-[var(--text-main)] transition-colors duration-300 flex flex-col justify-between">
       {/* 1. Sticky Navigation */}
@@ -25,7 +28,7 @@ export default function HomePage() {
 
       <main className="flex-grow">
         {/* 2. Hero Section with Signature Scientific Network */}
-        <Hero />
+        <Hero initialData={landingData} />
 
         {/* 3. Research Metrics Strip */}
         <ResearchStats />

@@ -65,24 +65,41 @@ export function PrincipalInvestigator() {
     return img;
   };
 
-  // Use team database PI data, falling back to landing store customizations
-  const piName = teamPI?.name || landingData?.piSection?.name || "Dr. Mohammad S. Kabir";
-  const piRole = teamPI?.role || landingData?.piSection?.designation || "Professor & Principal Investigator";
-  const piDepartment = teamPI?.department || landingData?.piSection?.department || "Department of Environmental Sciences";
-  const piAffiliation = teamPI?.affiliation || landingData?.piSection?.institution || "Jahangirnagar University";
+  // Helper to format counter metric: ignore invalid "0" or "0+" strings
+  const formatMetric = (val?: string | number | null, fallback: string = "") => {
+    if (val === undefined || val === null) return fallback;
+    const str = String(val).trim();
+    if (!str || str === "0" || str === "0+") return fallback;
+    return str;
+  };
+
+  // Use landing store customizations (from Admin Landing Page), falling back to team database PI data
+  const piName = landingData?.piSection?.name || teamPI?.name || "Dr Mostafizur Rahman";
+  const piRole = landingData?.piSection?.designation || teamPI?.role || "Principal investigator";
+  const piDepartment = landingData?.piSection?.department || teamPI?.department || "Department of Environmental Sciences";
+  const piAffiliation = landingData?.piSection?.institution || teamPI?.affiliation || "Jahangirnagar University";
   
   const piImage =
-    cleanImage(teamPI?.imageSrc) ||
     cleanImage(landingData?.piSection?.imageSrc) ||
+    cleanImage(teamPI?.imageSrc) ||
     cleanImage(getCachedPI()?.imageSrc) ||
     "";
 
-  const piQuote = teamPI?.quote || teamPI?.bio || landingData?.piSection?.bioQuote || "Our mission is to unravel the intricate mechanisms of environmental contaminants and translate rigorous experimental toxicology into actionable ecological conservation and community health protection.";
+  const piQuote = landingData?.piSection?.bioQuote || teamPI?.quote || teamPI?.bio || "Our mission is to unravel the intricate mechanisms of environmental contaminants and translate rigorous experimental toxicology into actionable ecological conservation and community health protection.";
   
-  const publicationsText = teamPI?.publicationsCount ? `${teamPI.publicationsCount}+` : landingData?.piSection?.publicationsCount || "74+";
-  const citationsText = teamPI?.citationsCount ? `${teamPI.citationsCount.toLocaleString()}+` : "2,840+";
-  const hIndexText = teamPI?.hIndex ? `${teamPI.hIndex}` : "26";
-  const scholarUrl = teamPI?.googleScholarUrl || landingData?.piSection?.scholarUrl;
+  const publicationsText = formatMetric(
+    landingData?.piSection?.publicationsCount,
+    teamPI?.publicationsCount && Number(teamPI.publicationsCount) > 0 ? `${teamPI.publicationsCount}+` : "120+"
+  );
+  const citationsText = formatMetric(
+    landingData?.piSection?.citationsCount,
+    teamPI?.citationsCount && Number(teamPI.citationsCount) > 0 ? `${Number(teamPI.citationsCount).toLocaleString()}+` : "8,095+"
+  );
+  const hIndexText = formatMetric(
+    landingData?.piSection?.hIndex,
+    teamPI?.hIndex && Number(teamPI.hIndex) > 0 ? `${teamPI.hIndex}` : "44"
+  );
+  const scholarUrl = landingData?.piSection?.scholarUrl || teamPI?.googleScholarUrl;
   const emailAddress = teamPI?.email || "msk@juniv.edu";
 
   // Dynamic research highlights from PI's research interests

@@ -236,7 +236,7 @@ export function CVModal({ isOpen, onClose, pi }: CVModalProps) {
             <div className="space-y-3">
               <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 flex items-center gap-2">
                 <BookOpen className="w-4 h-4 text-emerald-500" />
-                <span>Selected High-Impact Publications (from 74+ Peer Papers)</span>
+                <span>Selected High-Impact Publications (from {pi.publicationsCount && Number(pi.publicationsCount) > 0 ? `${pi.publicationsCount}+` : "120+"} Peer Papers)</span>
               </h3>
               <div className="space-y-2.5">
                 {cv.selectedPublications.map((pub, idx) => (

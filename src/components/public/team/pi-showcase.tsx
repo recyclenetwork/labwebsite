@@ -3,6 +3,7 @@
 import * as React from "react";
 import Link from "next/link";
 import { TeamMember } from "@/lib/team/types";
+import { useLandingData } from "@/lib/landing-store";
 import { CVModal } from "./cv-modal";
 import {
   Award,
@@ -25,8 +26,29 @@ interface PIShowcaseProps {
 
 export function PIShowcase({ pi }: PIShowcaseProps) {
   const [showCV, setShowCV] = React.useState(false);
+  const { data: landingData } = useLandingData();
 
   if (!pi) return null;
+
+  const formatMetric = (val?: string | number | null, fallback: string = "") => {
+    if (val === undefined || val === null) return fallback;
+    const str = String(val).trim();
+    if (!str || str === "0" || str === "0+") return fallback;
+    return str;
+  };
+
+  const publicationsText = formatMetric(
+    landingData?.piSection?.publicationsCount,
+    pi.publicationsCount && Number(pi.publicationsCount) > 0 ? `${pi.publicationsCount}+` : "120+"
+  );
+  const citationsText = formatMetric(
+    landingData?.piSection?.citationsCount,
+    pi.citationsCount && Number(pi.citationsCount) > 0 ? `${Number(pi.citationsCount).toLocaleString()}+` : "8,095+"
+  );
+  const hIndexText = formatMetric(
+    landingData?.piSection?.hIndex,
+    pi.hIndex && Number(pi.hIndex) > 0 ? `${pi.hIndex}` : "44"
+  );
 
   return (
     <>
@@ -124,7 +146,7 @@ export function PIShowcase({ pi }: PIShowcaseProps) {
               <div className="grid grid-cols-3 gap-2.5 sm:gap-3 w-full max-w-[395px] sm:max-w-[410px] mt-4">
                 <div className="p-3 rounded-2xl bg-slate-50 dark:bg-[#0F172A] border border-slate-200 dark:border-slate-800 text-center shadow-xs hover:border-emerald-500/40 transition-colors">
                   <span className="block text-xl font-black text-emerald-600 dark:text-emerald-400 font-[family-name:var(--font-manrope)]">
-                    {pi.publicationsCount || 74}+
+                    {publicationsText}
                   </span>
                   <span className="text-[10px] text-slate-500 dark:text-slate-400 font-bold uppercase tracking-wider">
                     Peer Papers
@@ -133,7 +155,7 @@ export function PIShowcase({ pi }: PIShowcaseProps) {
 
                 <div className="p-3 rounded-2xl bg-slate-50 dark:bg-[#0F172A] border border-slate-200 dark:border-slate-800 text-center shadow-xs hover:border-emerald-500/40 transition-colors">
                   <span className="block text-xl font-black text-teal-600 dark:text-teal-400 font-[family-name:var(--font-manrope)]">
-                    {pi.citationsCount ? `${pi.citationsCount}+` : "2.8k+"}
+                    {citationsText}
                   </span>
                   <span className="text-[10px] text-slate-500 dark:text-slate-400 font-bold uppercase tracking-wider">
                     Citations
@@ -142,7 +164,7 @@ export function PIShowcase({ pi }: PIShowcaseProps) {
 
                 <div className="p-3 rounded-2xl bg-slate-50 dark:bg-[#0F172A] border border-slate-200 dark:border-slate-800 text-center shadow-xs hover:border-emerald-500/40 transition-colors">
                   <span className="block text-xl font-black text-emerald-600 dark:text-emerald-400 font-[family-name:var(--font-manrope)]">
-                    {pi.hIndex || 26}
+                    {hIndexText}
                   </span>
                   <span className="text-[10px] text-slate-500 dark:text-slate-400 font-bold uppercase tracking-wider">
                     h-Index

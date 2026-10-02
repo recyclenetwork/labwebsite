@@ -4,7 +4,7 @@ import * as React from "react";
 import Link from "next/link";
 import { ArrowRight, UserCheck, ChevronLeft, ChevronRight, Sparkles, User } from "lucide-react";
 import { useLandingData } from "@/lib/landing-store";
-import { getTeamMembers } from "@/lib/team/store";
+import { getTeamMembers, getCachedTeamMembers } from "@/lib/team/store";
 import { TeamMember } from "@/lib/team/types";
 
 // Fisher-Yates Random Shuffle
@@ -33,7 +33,15 @@ interface FeaturedPeopleProps {
 export function FeaturedPeople({ people: initialPeople }: FeaturedPeopleProps) {
   const { data: landingData } = useLandingData();
   const scrollRef = React.useRef<HTMLDivElement>(null);
-  const [researchers, setResearchers] = React.useState<TeamMember[]>([]);
+  const [researchers, setResearchers] = React.useState<TeamMember[]>(() => {
+    const cached = getCachedTeamMembers();
+    return cached.filter((m) => {
+      if (m.isActive === false) return false;
+      const isPI = m.category === "pi" || m.role?.toLowerCase().includes("principal investigator");
+      const isAlumni = m.category === "alumni" || (m as any).isAlumni;
+      return !isPI && !isAlumni;
+    });
+  });
   const [isPaused, setIsPaused] = React.useState(false);
 
   // Load team members, filter out PI and Alumni, and randomly shuffle
