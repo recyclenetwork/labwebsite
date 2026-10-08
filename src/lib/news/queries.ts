@@ -90,7 +90,7 @@ export async function getPublishedNews(
   try {
     const supabase = createClient();
     let query = (supabase as any)
-      .from("news")
+      .from("news_posts")
       .select("*")
       .order("published_at", { ascending: false })
       .order("created_at", { ascending: false });
@@ -220,7 +220,7 @@ export async function getNewsBySlug(slug: string): Promise<NewsArticle | null> {
   try {
     const supabase = createClient();
     const { data, error } = await (supabase as any)
-      .from("news")
+      .from("news_posts")
       .select("*")
       .or(`slug.eq.${slug},id.eq.${slug}`)
       .single();

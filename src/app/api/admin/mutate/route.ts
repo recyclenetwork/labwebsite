@@ -197,7 +197,7 @@ export async function POST(req: NextRequest) {
     if (entity === "news") {
       if (action === "create") {
         const { data: created, error } = await (supabase as any)
-          .from("news")
+          .from("news_posts")
           .insert([data.newsPayload])
           .select()
           .single();
@@ -207,7 +207,7 @@ export async function POST(req: NextRequest) {
 
       if (action === "update") {
         const { error } = await (supabase as any)
-          .from("news")
+          .from("news_posts")
           .update(data.newsPayload)
           .eq("id", id);
         if (error) throw error;
@@ -215,14 +215,14 @@ export async function POST(req: NextRequest) {
       }
 
       if (action === "delete") {
-        const { error } = await (supabase as any).from("news").delete().eq("id", id);
+        const { error } = await (supabase as any).from("news_posts").delete().eq("id", id);
         if (error) throw error;
         return NextResponse.json({ success: true });
       }
 
       if (action === "toggle_publish") {
         const { error } = await (supabase as any)
-          .from("news")
+          .from("news_posts")
           .update({ is_published: data.is_published })
           .eq("id", id);
         if (error) throw error;
@@ -231,7 +231,7 @@ export async function POST(req: NextRequest) {
 
       if (action === "toggle_featured") {
         const { error } = await (supabase as any)
-          .from("news")
+          .from("news_posts")
           .update({ is_featured: data.is_featured })
           .eq("id", id);
         if (error) throw error;
