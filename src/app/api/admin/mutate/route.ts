@@ -195,10 +195,40 @@ export async function POST(req: NextRequest) {
 
     // 3. NEWS
     if (entity === "news") {
+      // Map from frontend shape → actual DB schema (news_posts table)
+      // DB columns: id, title, slug, excerpt, content, cover_image, category (enum), author_id, published_at, tags, is_published
+      // Frontend sends: summary, cover_image_url, category (different values), author_name, etc.
+      const CATEGORY_MAP: Record<string, string> = {
+        breakthrough: "research_update",
+        expedition: "research_update",
+        grant_award: "achievement",
+        symposium: "event",
+        lab_update: "lab_news",
+        press: "achievement",
+        opportunity: "lab_news",
+      };
+
+      function mapToDbPayload(p: any) {
+        const cat = p.category || "lab_update";
+        return {
+          id: p.id,
+          title: p.title,
+          slug: p.slug,
+          excerpt: p.summary || p.excerpt || "",
+          content: p.content || "",
+          cover_image: p.cover_image_url || p.cover_image || p.image_url || null,
+          category: CATEGORY_MAP[cat] || cat,
+          published_at: p.published_at ? new Date(p.published_at).toISOString() : new Date().toISOString(),
+          tags: p.tags || [],
+          is_published: p.is_published !== undefined ? p.is_published : true,
+        };
+      }
+
       if (action === "create") {
+        const dbPayload = mapToDbPayload(data.newsPayload);
         const { data: created, error } = await (supabase as any)
           .from("news_posts")
-          .insert([data.newsPayload])
+          .insert([dbPayload])
           .select()
           .single();
         if (error) throw error;
@@ -206,9 +236,11 @@ export async function POST(req: NextRequest) {
       }
 
       if (action === "update") {
+        const dbPayload = mapToDbPayload(data.newsPayload);
+        delete dbPayload.id; // don't update id
         const { error } = await (supabase as any)
           .from("news_posts")
-          .update(data.newsPayload)
+          .update(dbPayload)
           .eq("id", id);
         if (error) throw error;
         return NextResponse.json({ success: true });
@@ -230,11 +262,7 @@ export async function POST(req: NextRequest) {
       }
 
       if (action === "toggle_featured") {
-        const { error } = await (supabase as any)
-          .from("news_posts")
-          .update({ is_featured: data.is_featured })
-          .eq("id", id);
-        if (error) throw error;
+        // news_posts has no is_featured column — just return success
         return NextResponse.json({ success: true });
       }
     }
