@@ -88,9 +88,24 @@ export async function createNewsArticle(
     tags: tagsArray,
   };
 
+  const dbPayload = {
+    id: payload.id,
+    title: payload.title,
+    slug: payload.slug,
+    summary: payload.summary,
+    content: payload.content,
+    category: payload.category,
+    image_url: payload.cover_image_url,
+    author: payload.author_name,
+    read_time: payload.read_time_minutes,
+    is_featured: payload.is_featured,
+    is_published: payload.is_published,
+    published_at: payload.published_at,
+  };
+
   // Supabase insert attempt via server mutation (bypasses RLS)
   try {
-    const res = await adminMutate("news", "create", { newsPayload: payload });
+    const res = await adminMutate("news", "create", { newsPayload: dbPayload });
     if (res?.data?.id) {
       payload.id = res.data.id;
     }
@@ -154,9 +169,24 @@ export async function updateNewsArticle(
     updated_at: new Date().toISOString(),
   };
 
+  const dbPayload = {
+    title: payload.title,
+    slug: payload.slug,
+    summary: payload.summary,
+    content: payload.content,
+    category: payload.category,
+    image_url: payload.cover_image_url,
+    author: payload.author_name,
+    read_time: payload.read_time_minutes,
+    is_featured: payload.is_featured,
+    is_published: payload.is_published,
+    published_at: payload.published_at,
+    updated_at: payload.updated_at,
+  };
+
   // Supabase update attempt via server mutation (bypasses RLS)
   try {
-    await adminMutate("news", "update", { newsPayload: payload }, id);
+    await adminMutate("news", "update", { newsPayload: dbPayload }, id);
     await logNewsActivity("News article updated", id, { title: formData.title });
   } catch (err) {
     console.warn("Supabase news update failed:", err);
