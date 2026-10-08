@@ -103,8 +103,8 @@ export async function getPublishedNews(
 
     let items: NewsArticle[] = [];
 
-    if (!error && data && data.length > 0) {
-      items = data.map((d: any) => {
+    if (!error && data) {
+      const fetchedItems = data.map((d: any) => {
         const localMatch = localList.find((l) => l.id === d.id || l.slug === d.slug);
         return {
           id: d.id,
@@ -131,11 +131,11 @@ export async function getPublishedNews(
           updated_at: d.updated_at || new Date().toISOString(),
         };
       });
+
+      const localOnly = localList.filter((l) => !fetchedItems.some((f: any) => f.id === l.id));
+      items = [...fetchedItems, ...localOnly];
       items = cleanNewsList(items);
       saveLocalNews(items, false);
-    } else if (!error && data && data.length === 0) {
-      items = [];
-      saveLocalNews([], false);
     } else {
       items = cleanNewsList(localList);
     }
