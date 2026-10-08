@@ -65,6 +65,7 @@ export async function createProject(formData: ProjectFormData): Promise<ProjectW
   let newId = formData.id || `proj-${Date.now()}`;
 
   const projectPayload = {
+    id: newId,
     title: formData.title,
     slug,
     short_description: formData.short_description,
@@ -124,7 +125,6 @@ export async function createProject(formData: ProjectFormData): Promise<ProjectW
   });
 
   const fullProject: ProjectWithRelations = {
-    id: newId,
     ...projectPayload,
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString(),

@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/client";
+import { adminMutate } from "@/lib/supabase/admin-mutate";
 import { NewsArticle, NewsStats, NewsFilterParams } from "./types";
 import { idbGet, idbSet, safeLocalStorageGet, safeLocalStorageSet } from "@/lib/storage/idb-storage";
 
@@ -90,7 +91,7 @@ export async function getPublishedNews(
   try {
     const supabase = createClient();
     let query = (supabase as any)
-      .from("news_posts")
+      .from("news")
       .select("*")
       .order("published_at", { ascending: false })
       .order("created_at", { ascending: false });
@@ -132,17 +133,31 @@ export async function getPublishedNews(
         };
       });
 
-      const localOnly = localList.filter((l) => !fetchedItems.some((f: any) => f.id === l.id));
+      const localOnly = localList.filter((l) => !fetchedItems.some((f: any) => f.id === l.id || f.slug === l.slug));
+      if (localOnly.length > 0 && typeof window !== "undefined") {
+        // Auto-sync unsynced local articles to Supabase
+        adminMutate("news", "batch_upsert", { newsPayloads: localOnly }).catch((e) => {
+          console.warn("Background news sync notice:", e);
+        });
+      }
+
       items = [...fetchedItems, ...localOnly];
       items = cleanNewsList(items);
       saveLocalNews(items, false);
     } else {
       items = cleanNewsList(localList);
+      if (items.length > 0 && typeof window !== "undefined") {
+        adminMutate("news", "batch_upsert", { newsPayloads: items }).catch(() => {});
+      }
     }
 
     return applyFilters(items, filters, includeDrafts);
   } catch (err) {
-    return applyFilters(cleanNewsList(localList), filters, includeDrafts);
+    const fallbackItems = cleanNewsList(localList);
+    if (fallbackItems.length > 0 && typeof window !== "undefined") {
+      adminMutate("news", "batch_upsert", { newsPayloads: fallbackItems }).catch(() => {});
+    }
+    return applyFilters(fallbackItems, filters, includeDrafts);
   }
 }
 
@@ -220,7 +235,7 @@ export async function getNewsBySlug(slug: string): Promise<NewsArticle | null> {
   try {
     const supabase = createClient();
     const { data, error } = await (supabase as any)
-      .from("news_posts")
+      .from("news")
       .select("*")
       .or(`slug.eq.${slug},id.eq.${slug}`)
       .single();

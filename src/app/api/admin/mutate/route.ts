@@ -17,9 +17,13 @@ export async function POST(req: NextRequest) {
     // 1. PROJECTS
     if (entity === "project") {
       if (action === "create") {
+        const payload = {
+          ...data.projectPayload,
+          id: data.projectPayload.id || `proj-${Date.now()}`,
+        };
         const { data: created, error } = await (supabase as any)
           .from("projects")
-          .insert([data.projectPayload])
+          .insert([payload])
           .select()
           .single();
 
@@ -195,40 +199,36 @@ export async function POST(req: NextRequest) {
 
     // 3. NEWS
     if (entity === "news") {
-      // Map from frontend shape → actual DB schema (news_posts table)
-      // DB columns: id, title, slug, excerpt, content, cover_image, category (enum), author_id, published_at, tags, is_published
-      // Frontend sends: summary, cover_image_url, category (different values), author_name, etc.
-      const CATEGORY_MAP: Record<string, string> = {
-        breakthrough: "research_update",
-        expedition: "research_update",
-        grant_award: "achievement",
-        symposium: "event",
-        lab_update: "lab_news",
-        press: "achievement",
-        opportunity: "lab_news",
-      };
-
       function mapToDbPayload(p: any) {
-        const cat = p.category || "lab_update";
         return {
-          id: p.id,
+          id: p.id || `news-${Date.now()}`,
           title: p.title,
           slug: p.slug,
-          excerpt: p.summary || p.excerpt || "",
+          summary: p.summary || p.excerpt || "",
           content: p.content || "",
-          cover_image: p.cover_image_url || p.cover_image || p.image_url || null,
-          category: CATEGORY_MAP[cat] || cat,
-          published_at: p.published_at ? new Date(p.published_at).toISOString() : new Date().toISOString(),
-          tags: p.tags || [],
-          is_published: p.is_published !== undefined ? p.is_published : true,
+          category: p.category || "lab_update",
+          cover_image_url: p.cover_image_url || p.cover_image || p.image_url || null,
+          image_caption: p.image_caption || null,
+          image_credit: p.image_credit || null,
+          author_name: p.author_name || p.author || "Lab Editorial Team",
+          author_role: p.author_role || null,
+          author_avatar: p.author_avatar || null,
+          published_at: p.published_at ? (p.published_at.includes("T") ? p.published_at.split("T")[0] : p.published_at) : new Date().toISOString().split("T")[0],
+          read_time_minutes: p.read_time_minutes || p.read_time || 4,
+          is_featured: !!p.is_featured,
+          is_published: p.is_published !== false,
+          tags: Array.isArray(p.tags) ? p.tags : [],
+          related_project_ids: Array.isArray(p.related_project_ids) ? p.related_project_ids : (p.projects ? p.projects.map((pr: any) => pr.id || pr) : []),
+          related_publication_ids: Array.isArray(p.related_publication_ids) ? p.related_publication_ids : [],
+          updated_at: new Date().toISOString(),
         };
       }
 
       if (action === "create") {
         const dbPayload = mapToDbPayload(data.newsPayload);
         const { data: created, error } = await (supabase as any)
-          .from("news_posts")
-          .insert([dbPayload])
+          .from("news")
+          .upsert([dbPayload], { onConflict: "id" })
           .select()
           .single();
         if (error) throw error;
@@ -239,7 +239,7 @@ export async function POST(req: NextRequest) {
         const dbPayload = mapToDbPayload(data.newsPayload);
         delete dbPayload.id; // don't update id
         const { error } = await (supabase as any)
-          .from("news_posts")
+          .from("news")
           .update(dbPayload)
           .eq("id", id);
         if (error) throw error;
@@ -247,22 +247,37 @@ export async function POST(req: NextRequest) {
       }
 
       if (action === "delete") {
-        const { error } = await (supabase as any).from("news_posts").delete().eq("id", id);
+        const { error } = await (supabase as any).from("news").delete().eq("id", id);
         if (error) throw error;
         return NextResponse.json({ success: true });
       }
 
       if (action === "toggle_publish") {
         const { error } = await (supabase as any)
-          .from("news_posts")
-          .update({ is_published: data.is_published })
+          .from("news")
+          .update({ is_published: data.is_published, updated_at: new Date().toISOString() })
           .eq("id", id);
         if (error) throw error;
         return NextResponse.json({ success: true });
       }
 
       if (action === "toggle_featured") {
-        // news_posts has no is_featured column — just return success
+        const { error } = await (supabase as any)
+          .from("news")
+          .update({ is_featured: data.is_featured, updated_at: new Date().toISOString() })
+          .eq("id", id);
+        if (error) throw error;
+        return NextResponse.json({ success: true });
+      }
+
+      if (action === "batch_upsert") {
+        const payloads = (data.newsPayloads || []).map(mapToDbPayload);
+        if (payloads.length > 0) {
+          const { error } = await (supabase as any)
+            .from("news")
+            .upsert(payloads, { onConflict: "id" });
+          if (error) throw error;
+        }
         return NextResponse.json({ success: true });
       }
     }

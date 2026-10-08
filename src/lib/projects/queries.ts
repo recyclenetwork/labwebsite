@@ -199,6 +199,10 @@ export async function getPublishedProjects(
     }
 
     if (!data || data.length === 0) {
+      const local = getLocalProjects();
+      if (local && local.length > 0) {
+        return filterLocalProjects(local, filters, includeDrafts);
+      }
       saveLocalProjects([], false);
       return [];
     }
